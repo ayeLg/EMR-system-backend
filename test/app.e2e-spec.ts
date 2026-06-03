@@ -1,8 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
+import { configureApp } from './../src/bootstrap/configure-app';
 
 describe('App (e2e)', () => {
   let app: INestApplication<App>;
@@ -12,11 +13,11 @@ describe('App (e2e)', () => {
       imports: [AppModule],
     }).compile();
 
+    // Boot through the production bootstrap so the test exercises the real
+    // pipe (ZodValidationPipe), TransformInterceptor envelope, and exception
+    // filter — not a hand-rolled config that drifts from production.
     app = moduleFixture.createNestApplication();
-    app.setGlobalPrefix('api');
-    app.useGlobalPipes(
-      new ValidationPipe({ whitelist: true, transform: true }),
-    );
+    configureApp(app);
     await app.init();
   });
 
@@ -29,8 +30,14 @@ describe('App (e2e)', () => {
       .get('/api/health')
       .expect(200)
       .expect((res) => {
-        const body = res.body as { status: string };
-        expect(body.status).toBe('ok');
+        const body = res.body as {
+          success: boolean;
+          data: { status: string };
+          timestamp: string;
+        };
+        expect(body.success).toBe(true);
+        expect(body.timestamp).toBeDefined();
+        expect(body.data.status).toBe('ok');
       });
   });
 
@@ -43,11 +50,12 @@ describe('App (e2e)', () => {
       })
       .expect((res) => {
         const body = res.body as {
-          accessToken: string;
-          user: { role: string };
+          success: boolean;
+          data: { accessToken: string; user: { role: string } };
         };
-        expect(body.accessToken).toBeDefined();
-        expect(body.user.role).toBe('doctor');
+        expect(body.success).toBe(true);
+        expect(body.data.accessToken).toBeDefined();
+        expect(body.data.user.role).toBe('doctor');
       });
   });
 });

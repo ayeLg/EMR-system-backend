@@ -5,6 +5,7 @@ import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { HttpExceptionFilter } from '@/common/filters/http-exception.filter';
+import { TransformInterceptor } from '@/common/interceptors/transform.interceptor';
 import { requestContextMiddleware } from '@/common/middleware/request-context.middleware';
 import { requestLoggerMiddleware } from '@/common/middleware/request-logger.middleware';
 import { setupSwagger } from '@/common/swagger/setup-swagger';
@@ -28,6 +29,7 @@ export function configureApp(app: INestApplication): void {
 
   app.setGlobalPrefix('api');
   app.useGlobalPipes(new ZodValidationPipe());
+  app.useGlobalInterceptors(new TransformInterceptor());
   app.useGlobalFilters(new HttpExceptionFilter(config));
   app.enableShutdownHooks();
 

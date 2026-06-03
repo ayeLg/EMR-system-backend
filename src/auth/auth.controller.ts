@@ -1,13 +1,13 @@
 import { Body, Controller, Get, Post } from '@nestjs/common';
 import {
   ApiBearerAuth,
-  ApiOkResponse,
   ApiOperation,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { Public } from '@/common/decorators/public.decorator';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
+import { ApiOkResponseData } from '@/common/swagger/api-response.decorator';
 import { SWAGGER_BEARER_AUTH } from '@/common/swagger/setup-swagger';
 import type { User } from '@/modules/users/entities/user.entity';
 import { AuthService } from './auth.service';
@@ -22,7 +22,7 @@ export class AuthController {
   @Public()
   @Post('login')
   @ApiOperation({ summary: 'Login with email and password' })
-  @ApiOkResponse({ type: AuthResponseDto })
+  @ApiOkResponseData(AuthResponseDto)
   @ApiUnauthorizedResponse({ description: 'Invalid credentials' })
   login(@Body() dto: LoginDto): Promise<AuthResponseDto> {
     return this.authService.login(dto);
@@ -31,7 +31,7 @@ export class AuthController {
   @ApiBearerAuth(SWAGGER_BEARER_AUTH)
   @Get('me')
   @ApiOperation({ summary: 'Get current authenticated user' })
-  @ApiOkResponse({ type: MeResponseDto })
+  @ApiOkResponseData(MeResponseDto)
   @ApiUnauthorizedResponse()
   me(@CurrentUser() user: User): MeResponseDto {
     return { user };

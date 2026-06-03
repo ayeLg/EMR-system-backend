@@ -9,16 +9,18 @@ import {
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
-  ApiCreatedResponse,
   ApiForbiddenResponse,
   ApiNotFoundResponse,
-  ApiOkResponse,
   ApiOperation,
   ApiParam,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { CheckPolicies } from '@/common/decorators/check-policies.decorator';
+import {
+  ApiCreatedResponseData,
+  ApiOkResponseData,
+} from '@/common/swagger/api-response.decorator';
 import { SWAGGER_BEARER_AUTH } from '@/common/swagger/setup-swagger';
 import { CreatePatientDto } from './dto/create-patient.dto';
 import {
@@ -45,7 +47,7 @@ export class PatientsController {
   @CheckPolicies(readPatientPolicy())
   @Get()
   @ApiOperation({ summary: 'List all patients' })
-  @ApiOkResponse({ type: PatientResponseDto, isArray: true })
+  @ApiOkResponseData(PatientResponseDto, { isArray: true })
   findAll(): PatientResponseDto[] {
     return this.patientsService.findAll();
   }
@@ -54,7 +56,7 @@ export class PatientsController {
   @Get(':id')
   @ApiOperation({ summary: 'Get patient by ID' })
   @ApiParam({ name: 'id', example: 'p1' })
-  @ApiOkResponse({ type: PatientResponseDto })
+  @ApiOkResponseData(PatientResponseDto)
   @ApiNotFoundResponse()
   findOne(@Param('id') id: string): PatientResponseDto {
     return this.patientsService.findOne(id);
@@ -63,7 +65,7 @@ export class PatientsController {
   @CheckPolicies(createPatientPolicy())
   @Post()
   @ApiOperation({ summary: 'Create a patient' })
-  @ApiCreatedResponse({ type: PatientResponseDto })
+  @ApiCreatedResponseData(PatientResponseDto)
   create(@Body() dto: CreatePatientDto): PatientResponseDto {
     return this.patientsService.create(dto);
   }
@@ -72,7 +74,7 @@ export class PatientsController {
   @Patch(':id')
   @ApiOperation({ summary: 'Update a patient' })
   @ApiParam({ name: 'id', example: 'p1' })
-  @ApiOkResponse({ type: PatientResponseDto })
+  @ApiOkResponseData(PatientResponseDto)
   @ApiNotFoundResponse()
   update(
     @Param('id') id: string,
@@ -85,7 +87,7 @@ export class PatientsController {
   @Delete(':id')
   @ApiOperation({ summary: 'Delete a patient' })
   @ApiParam({ name: 'id', example: 'p1' })
-  @ApiOkResponse({ type: DeletePatientResponseDto })
+  @ApiOkResponseData(DeletePatientResponseDto)
   @ApiNotFoundResponse()
   remove(@Param('id') id: string): DeletePatientResponseDto {
     this.patientsService.remove(id);

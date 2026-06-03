@@ -9,6 +9,7 @@ import { ConfigService } from '@nestjs/config';
 import type { Request, Response } from 'express';
 
 interface ErrorResponseBody {
+  success: false;
   statusCode: number;
   timestamp: string;
   method: string;
@@ -37,6 +38,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const nodeEnv = this.config.get<string>('nodeEnv', 'development');
 
     const body: ErrorResponseBody = {
+      success: false,
       statusCode: status,
       timestamp: new Date().toISOString(),
       method: request.method,
