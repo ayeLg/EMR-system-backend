@@ -1,6 +1,6 @@
 import { CaslAbilityFactory } from './casl-ability.factory';
 import { Action } from './types';
-import { Subjects } from './types/subjects';
+import { PATIENT_SUBJECT } from './types/subjects';
 import { Role } from '@/roles/role.enum';
 import type { User } from '@/users/entities/user.entity';
 
@@ -23,14 +23,14 @@ describe('CaslAbilityFactory', () => {
 
   it('grants doctor read and update on patients', () => {
     const ability = factory.createForUser(buildUser(Role.Doctor));
-    expect(ability.can(Action.Read, Subjects.Patient)).toBe(true);
-    expect(ability.can(Action.Update, Subjects.Patient)).toBe(true);
-    expect(ability.can(Action.Delete, Subjects.Patient)).toBe(false);
+    expect(ability.can(Action.Read, PATIENT_SUBJECT)).toBe(true);
+    expect(ability.can(Action.Update, PATIENT_SUBJECT)).toBe(true);
+    expect(ability.can(Action.Delete, PATIENT_SUBJECT)).toBe(false);
   });
 
   it('grants receptionist create but not update on patients', () => {
     const ability = factory.createForUser(buildUser(Role.Receptionist));
-    expect(ability.can(Action.Create, Subjects.Patient)).toBe(true);
-    expect(ability.can(Action.Update, Subjects.Patient)).toBe(false);
+    expect(ability.can(Action.Create, PATIENT_SUBJECT)).toBe(true);
+    expect(ability.can(Action.Update, PATIENT_SUBJECT)).toBe(false);
   });
 });
