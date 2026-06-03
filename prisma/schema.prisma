@@ -1,0 +1,888 @@
+// ============================================================
+// EMR / EHR System — Prisma Schema
+// Database: PostgreSQL 15
+// Version : 1.0.0
+// Modules : Identity, Patient, Scheduling, Clinical,
+//           Pharmacy, Laboratory, Billing
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  // Prisma 7: connection URL lives in prisma.config.ts (Migrate) and is passed
+  // to PrismaClient via the pg driver adapter at runtime.
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum BloodType {
+  A_POS
+  A_NEG
+  B_POS
+  B_NEG
+  AB_POS
+  AB_NEG
+  O_POS
+  O_NEG
+  UNKNOWN
+}
+
+enum AllergenType {
+  DRUG
+  FOOD
+  ENVIRONMENTAL
+  OTHER
+}
+
+enum AllergySeverity {
+  MILD
+  MODERATE
+  SEVERE
+  FATAL
+}
+
+enum AllergyStatus {
+  ACTIVE
+  INACTIVE
+  RESOLVED
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  PENDING
+}
+
+enum AppointmentType {
+  OPD
+  IPD
+  FOLLOWUP
+  EMERGENCY
+  TELECONSULT
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  ARRIVED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum EncounterType {
+  OPD
+  IPD
+  EMERGENCY
+  FOLLOWUP
+  TELECONSULT
+}
+
+enum EncounterStatus {
+  OPEN
+  COMPLETED
+  CANCELLED
+}
+
+enum DiagnosisType {
+  PRIMARY
+  SECONDARY
+  COMPLICATION
+  COMORBIDITY
+  ADMITTING
+  DISCHARGE
+}
+
+enum DiagnosisStatus {
+  ACTIVE
+  RESOLVED
+  CHRONIC
+  SUSPECTED
+  RULED_OUT
+}
+
+enum OrderPriority {
+  ROUTINE
+  URGENT
+  STAT
+}
+
+enum OrderStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  ON_HOLD
+}
+
+enum MedicationRoute {
+  ORAL
+  IV
+  IM
+  SC
+  TOPICAL
+  INHALED
+  SUBLINGUAL
+  RECTAL
+  NASAL
+  OPHTHALMIC
+  OTIC
+  OTHER
+}
+
+enum PrescriptionStatus {
+  PENDING
+  PARTIALLY_DISPENSED
+  DISPENSED
+  CANCELLED
+  EXPIRED
+}
+
+enum LabOrderStatus {
+  ORDERED
+  SPECIMEN_COLLECTED
+  IN_PROCESS
+  RESULTED
+  VERIFIED
+  CANCELLED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  PARTIALLY_PAID
+  PAID
+  VOID
+  OVERDUE
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  INSURANCE
+  MOBILE_PAYMENT
+  BANK_TRANSFER
+  WAIVER
+}
+
+enum InsuranceClaimStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  PARTIALLY_APPROVED
+  REJECTED
+  PAID
+}
+
+enum NotificationType {
+  APPOINTMENT_REMINDER
+  LAB_RESULT_READY
+  CRITICAL_VALUE
+  MEDICATION_DUE
+  SYSTEM_ALERT
+}
+
+// ============================================================
+// MODULE 1 — IDENTITY & ACCESS
+// ============================================================
+
+model Department {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code        String   @unique @db.VarChar(20)
+  name        String   @db.VarChar(100)
+  description String?  @db.Text
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users        User[]
+  appointments Appointment[]
+  wards        Ward[]
+
+  @@map("departments")
+}
+
+model Role {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code        String   @unique @db.VarChar(50)
+  name        String   @db.VarChar(100)
+  description String?  @db.Text
+  createdAt   DateTime @default(now())
+
+  users       User[]
+  permissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id       String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  module   String @db.VarChar(50)
+  action   String @db.VarChar(50)
+  resource String @db.VarChar(100)
+
+  roles RolePermission[]
+
+  @@unique([module, action, resource])
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String @db.Uuid
+  permissionId String @db.Uuid
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model User {
+  id                String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  employeeId        String     @unique @db.VarChar(20)
+  username          String     @unique @db.VarChar(50)
+  passwordHash      String     @db.VarChar(255)
+  email             String     @unique @db.VarChar(150)
+  fullName          String     @db.VarChar(150)
+  phone             String?    @db.VarChar(20)
+  roleId            String     @db.Uuid
+  departmentId      String?    @db.Uuid
+  totpSecret        String?    @db.Text        // encrypted at app level
+  status            UserStatus @default(ACTIVE)
+  lastLoginAt       DateTime?
+  passwordChangedAt DateTime?
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  role       Role        @relation(fields: [roleId], references: [id])
+  department Department? @relation(fields: [departmentId], references: [id])
+
+  // Relations as creator/author
+  registeredPatients  Patient[]     @relation("RegisteredBy")
+  conductedEncounters Encounter[]   @relation("AttendingDoctor")
+  prescriptions       Prescription[] @relation("PrescribedBy")
+  dispensedRxs        Prescription[] @relation("DispensedBy")
+  labOrdersPlaced     LabOrder[]    @relation("OrderedBy")
+  confirmedAllergies  Allergy[]     @relation("ConfirmedBy")
+  recordedVitals      VitalSign[]   @relation("RecordedBy")
+  diagnosesMade       Diagnosis[]   @relation("DiagnosedBy")
+  invoicesCreated     Invoice[]     @relation("CreatedBy")
+  auditLogs           AuditLog[]
+  notifications       Notification[]
+
+  @@map("users")
+}
+
+model AuditLog {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String   @db.Uuid
+  action     String   @db.VarChar(100)
+  module     String   @db.VarChar(50)
+  resourceId String?  @db.Uuid
+  oldData    Json?
+  newData    Json?
+  ipAddress  String?  @db.VarChar(45)
+  userAgent  String?  @db.Text
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([module, resourceId])
+  @@map("audit_logs")
+}
+
+// ============================================================
+// MODULE 2 — PATIENT REGISTRY
+// ============================================================
+
+model Patient {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  mrn            String    @unique @db.VarChar(20)
+  firstName      String    @db.VarChar(100)    // encrypted at app level
+  lastName       String    @db.VarChar(100)    // encrypted at app level
+  dateOfBirth    DateTime  @db.Date
+  gender         Gender
+  nrcNumber      String?   @unique @db.VarChar(30) // encrypted at app level
+  bloodType      BloodType @default(UNKNOWN)
+  photoUrl       String?   @db.Text
+  primaryPhone   String    @db.VarChar(20)
+  secondaryPhone String?   @db.VarChar(20)
+  email          String?   @db.VarChar(150)
+  address        String?   @db.Text            // encrypted at app level
+  city           String?   @db.VarChar(100)
+  township       String?   @db.VarChar(100)
+  isActive       Boolean   @default(true)
+  registeredById String    @db.Uuid
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  registeredBy User @relation("RegisteredBy", fields: [registeredById], references: [id])
+
+  contacts     PatientContact[]
+  insurance    PatientInsurance[]
+  allergies    Allergy[]
+  appointments Appointment[]
+  encounters   Encounter[]
+  vitalSigns   VitalSign[]
+  diagnoses    Diagnosis[]
+  prescriptions Prescription[]
+  labOrders    LabOrder[]
+  invoices     Invoice[]
+
+  @@index([lastName, firstName])
+  @@index([primaryPhone])
+  @@index([dateOfBirth])
+  @@map("patients")
+}
+
+model PatientContact {
+  id           String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  patientId    String  @db.Uuid
+  relationship String  @db.VarChar(50)
+  fullName     String  @db.VarChar(150)
+  phone        String  @db.VarChar(20)
+  email        String? @db.VarChar(150)
+  isEmergency  Boolean @default(false)
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@map("patient_contacts")
+}
+
+model PatientInsurance {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  patientId       String    @db.Uuid
+  provider        String    @db.VarChar(100)
+  policyNumber    String    @db.VarChar(50)
+  memberName      String    @db.VarChar(150)
+  groupNumber     String?   @db.VarChar(50)
+  expiryDate      DateTime? @db.Date
+  coverageDetails Json?
+  isPrimary       Boolean   @default(true)
+  isActive        Boolean   @default(true)
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@map("patient_insurance")
+}
+
+model Allergy {
+  id           String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  patientId    String          @db.Uuid
+  allergenType AllergenType
+  allergenName String          @db.VarChar(200)
+  reaction     String          @db.Text
+  severity     AllergySeverity
+  status       AllergyStatus   @default(ACTIVE)
+  confirmedById String?        @db.Uuid
+  onsetDate    DateTime?       @db.Date
+  notes        String?         @db.Text
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  patient     Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  confirmedBy User?   @relation("ConfirmedBy", fields: [confirmedById], references: [id])
+
+  @@index([patientId, status])
+  @@map("allergies")
+}
+
+// ============================================================
+// MODULE 3 — SCHEDULING
+// ============================================================
+
+model Ward {
+  id           String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code         String  @unique @db.VarChar(20)
+  name         String  @db.VarChar(100)
+  departmentId String  @db.Uuid
+  totalBeds    Int
+  isActive     Boolean @default(true)
+
+  department Department @relation(fields: [departmentId], references: [id])
+  encounters Encounter[]
+
+  @@map("wards")
+}
+
+model DoctorSchedule {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  doctorId   String   @db.Uuid
+  dayOfWeek  Int      // 0=Sun, 1=Mon ... 6=Sat
+  startTime  String   @db.VarChar(5)  // "08:00"
+  endTime    String   @db.VarChar(5)  // "17:00"
+  slotMinutes Int     @default(15)
+  isActive   Boolean  @default(true)
+  validFrom  DateTime @db.Date
+  validUntil DateTime? @db.Date
+
+  @@index([doctorId, dayOfWeek])
+  @@map("doctor_schedules")
+}
+
+model Appointment {
+  id              String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  appointmentNo   String            @unique @db.VarChar(20)
+  patientId       String            @db.Uuid
+  doctorId        String            @db.Uuid
+  departmentId    String            @db.Uuid
+  scheduledAt     DateTime
+  durationMinutes Int               @default(15)
+  type            AppointmentType
+  status          AppointmentStatus @default(SCHEDULED)
+  chiefComplaint  String?           @db.Text
+  notes           String?           @db.Text
+  bookedById      String            @db.Uuid
+  cancelledReason String?           @db.Text
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  patient    Patient    @relation(fields: [patientId], references: [id])
+  department Department @relation(fields: [departmentId], references: [id])
+  encounter  Encounter?
+
+  @@index([patientId, scheduledAt])
+  @@index([doctorId, scheduledAt])
+  @@index([status, scheduledAt])
+  @@map("appointments")
+}
+
+// ============================================================
+// MODULE 4 — CLINICAL / EHR
+// ============================================================
+
+model Encounter {
+  id               String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  encounterNo      String          @unique @db.VarChar(20)
+  patientId        String          @db.Uuid
+  appointmentId    String?         @unique @db.Uuid
+  attendingDoctorId String         @db.Uuid
+  encounterType    EncounterType
+  status           EncounterStatus @default(OPEN)
+  startTime        DateTime
+  endTime          DateTime?
+  wardId           String?         @db.Uuid
+  bedNumber        String?         @db.VarChar(10)
+  admissionDate    DateTime?       @db.Date
+  dischargeDate    DateTime?       @db.Date
+  dischargeSummary String?         @db.Text
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  patient         Patient      @relation(fields: [patientId], references: [id])
+  appointment     Appointment? @relation(fields: [appointmentId], references: [id])
+  attendingDoctor User         @relation("AttendingDoctor", fields: [attendingDoctorId], references: [id])
+  ward            Ward?        @relation(fields: [wardId], references: [id])
+
+  vitalSigns    VitalSign[]
+  diagnoses     Diagnosis[]
+  clinicalNotes ClinicalNote[]
+  orders        MedicalOrder[]
+  prescriptions Prescription[]
+  labOrders     LabOrder[]
+  invoices      Invoice[]
+
+  @@index([patientId, startTime])
+  @@index([status])
+  @@map("encounters")
+}
+
+model VitalSign {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  encounterId      String   @db.Uuid
+  patientId        String   @db.Uuid
+  recordedById     String   @db.Uuid
+  recordedAt       DateTime @default(now())
+  systolicBp       Int?
+  diastolicBp      Int?
+  heartRate        Int?
+  respiratoryRate  Int?
+  temperatureCelsius Decimal? @db.Decimal(4, 1)
+  oxygenSaturation Decimal? @db.Decimal(4, 1)
+  weightKg         Decimal? @db.Decimal(5, 2)
+  heightCm         Decimal? @db.Decimal(5, 1)
+  bmi              Decimal? @db.Decimal(4, 1)
+  painScore        Int?     // 0-10
+  bloodGlucose     Decimal? @db.Decimal(5, 1)
+  notes            String?  @db.Text
+
+  encounter  Encounter @relation(fields: [encounterId], references: [id])
+  patient    Patient   @relation(fields: [patientId], references: [id])
+  recordedBy User      @relation("RecordedBy", fields: [recordedById], references: [id])
+
+  @@index([encounterId, recordedAt])
+  @@map("vital_signs")
+}
+
+model Diagnosis {
+  id           String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  encounterId  String          @db.Uuid
+  patientId    String          @db.Uuid
+  icd10Code    String          @db.VarChar(10)
+  description  String          @db.Text
+  type         DiagnosisType
+  status       DiagnosisStatus @default(ACTIVE)
+  diagnosedById String         @db.Uuid
+  diagnosedAt  DateTime        @default(now())
+  notes        String?         @db.Text
+
+  encounter   Encounter @relation(fields: [encounterId], references: [id])
+  patient     Patient   @relation(fields: [patientId], references: [id])
+  diagnosedBy User      @relation("DiagnosedBy", fields: [diagnosedById], references: [id])
+
+  @@index([patientId, status])
+  @@index([icd10Code])
+  @@map("diagnoses")
+}
+
+model ClinicalNote {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  encounterId String   @db.Uuid
+  authorId    String   @db.Uuid
+  noteType    String   @db.VarChar(50)  // SOAP, PROGRESS, NURSING, DISCHARGE
+  subjective  String?  @db.Text         // SOAP S
+  objective   String?  @db.Text         // SOAP O
+  assessment  String?  @db.Text         // SOAP A
+  plan        String?  @db.Text         // SOAP P
+  content     String?  @db.Text         // free-text notes
+  isAmended   Boolean  @default(false)
+  amendedFrom String?  @db.Uuid
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  encounter Encounter @relation(fields: [encounterId], references: [id])
+
+  @@index([encounterId, createdAt])
+  @@map("clinical_notes")
+}
+
+model MedicalOrder {
+  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  encounterId String        @db.Uuid
+  orderedById String        @db.Uuid
+  orderType   String        @db.VarChar(50) // LAB, RADIOLOGY, DIET, NURSING, REFERRAL
+  priority    OrderPriority @default(ROUTINE)
+  status      OrderStatus   @default(PENDING)
+  description String        @db.Text
+  details     Json?
+  orderedAt   DateTime      @default(now())
+  completedAt DateTime?
+  notes       String?       @db.Text
+
+  encounter Encounter @relation(fields: [encounterId], references: [id])
+
+  @@index([encounterId, status])
+  @@map("medical_orders")
+}
+
+// ============================================================
+// MODULE 5 — PHARMACY
+// ============================================================
+
+model Medication {
+  id                String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code              String  @unique @db.VarChar(30)
+  genericName       String  @db.VarChar(200)
+  brandName         String? @db.VarChar(200)
+  category          String  @db.VarChar(100)
+  dosageForm        String  @db.VarChar(50)  // tablet, capsule, syrup, injection
+  strength          String  @db.VarChar(50)  // 500mg, 250mg/5ml
+  unit              String  @db.VarChar(20)  // tablet, ml, vial
+  isControlled      Boolean @default(false)
+  requiresRefrigeration Boolean @default(false)
+  isActive          Boolean @default(true)
+  interactions      Json?   // stored interaction data
+  contraindications Json?
+
+  inventoryItems    DrugInventory[]
+  prescriptionItems PrescriptionItem[]
+
+  @@index([genericName])
+  @@map("medications")
+}
+
+model DrugInventory {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  medicationId   String   @db.Uuid
+  batchNumber    String   @db.VarChar(50)
+  expiryDate     DateTime @db.Date
+  quantityOnHand Int
+  reorderLevel   Int      @default(50)
+  unitCost       Decimal  @db.Decimal(10, 2)
+  supplier       String?  @db.VarChar(150)
+  receivedAt     DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  medication Medication @relation(fields: [medicationId], references: [id])
+
+  @@index([medicationId, expiryDate])
+  @@map("drug_inventory")
+}
+
+model Prescription {
+  id           String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  rxNumber     String             @unique @db.VarChar(20)
+  encounterId  String             @db.Uuid
+  patientId    String             @db.Uuid
+  prescribedById String           @db.Uuid
+  status       PrescriptionStatus @default(PENDING)
+  prescribedAt DateTime           @default(now())
+  dispensedAt  DateTime?
+  dispensedById String?           @db.Uuid
+  notes        String?            @db.Text
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  encounter   Encounter @relation(fields: [encounterId], references: [id])
+  patient     Patient   @relation(fields: [patientId], references: [id])
+  prescribedBy User     @relation("PrescribedBy", fields: [prescribedById], references: [id])
+  dispensedBy  User?    @relation("DispensedBy", fields: [dispensedById], references: [id])
+
+  items PrescriptionItem[]
+
+  @@index([status, prescribedAt])
+  @@index([patientId])
+  @@map("prescriptions")
+}
+
+model PrescriptionItem {
+  id                  String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  prescriptionId      String          @db.Uuid
+  medicationId        String          @db.Uuid
+  dose                String          @db.VarChar(50)
+  route               MedicationRoute
+  frequency           String          @db.VarChar(50)  // BD, TDS, QID, PRN
+  durationDays        Int?
+  quantityPrescribed  Int
+  quantityDispensed   Int?
+  instructions        String?         @db.Text
+  isSubstitutionAllowed Boolean       @default(false)
+
+  prescription Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+  medication   Medication   @relation(fields: [medicationId], references: [id])
+
+  @@map("prescription_items")
+}
+
+// ============================================================
+// MODULE 6 — LABORATORY
+// ============================================================
+
+model LabTest {
+  id             String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code           String  @unique @db.VarChar(30)
+  name           String  @db.VarChar(200)
+  category       String  @db.VarChar(100)   // Hematology, Chemistry, Microbiology
+  sampleType     String  @db.VarChar(50)    // Blood, Urine, Swab
+  turnaroundHours Int    @default(24)
+  price          Decimal @db.Decimal(10, 2)
+  isActive       Boolean @default(true)
+  referenceRanges Json?  // [{gender, ageMin, ageMax, low, high, unit, criticalLow, criticalHigh}]
+
+  orderItems LabOrderItem[]
+
+  @@map("lab_tests")
+}
+
+model LabOrder {
+  id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderNo       String        @unique @db.VarChar(20)
+  encounterId   String        @db.Uuid
+  patientId     String        @db.Uuid
+  orderedById   String        @db.Uuid
+  priority      OrderPriority @default(ROUTINE)
+  status        LabOrderStatus @default(ORDERED)
+  orderedAt     DateTime      @default(now())
+  collectedAt   DateTime?
+  resultedAt    DateTime?
+  clinicalNotes String?       @db.Text
+
+  encounter Encounter @relation(fields: [encounterId], references: [id])
+  patient   Patient   @relation(fields: [patientId], references: [id])
+  orderedBy User      @relation("OrderedBy", fields: [orderedById], references: [id])
+
+  items LabOrderItem[]
+
+  @@index([status, priority])
+  @@index([patientId])
+  @@map("lab_orders")
+}
+
+model LabOrderItem {
+  id          String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  labOrderId  String @db.Uuid
+  labTestId   String @db.Uuid
+  specimenBarcode String? @db.VarChar(50)
+
+  labOrder LabOrder @relation(fields: [labOrderId], references: [id], onDelete: Cascade)
+  labTest  LabTest  @relation(fields: [labTestId], references: [id])
+  result   LabResult?
+
+  @@map("lab_order_items")
+}
+
+model LabResult {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  labOrderItemId  String   @unique @db.Uuid
+  patientId       String   @db.Uuid
+  resultValue     String   @db.Text
+  unit            String?  @db.VarChar(30)
+  referenceRangeLow  Decimal? @db.Decimal(10, 3)
+  referenceRangeHigh Decimal? @db.Decimal(10, 3)
+  isAbnormal      Boolean  @default(false)
+  isCritical      Boolean  @default(false)
+  interpretation  String?  @db.Text
+  performedById   String   @db.Uuid
+  verifiedById    String?  @db.Uuid
+  resultedAt      DateTime @default(now())
+  verifiedAt      DateTime?
+  notes           String?  @db.Text
+
+  labOrderItem LabOrderItem @relation(fields: [labOrderItemId], references: [id])
+
+  @@index([patientId])
+  @@map("lab_results")
+}
+
+// ============================================================
+// MODULE 7 — BILLING & FINANCE
+// ============================================================
+
+model Service {
+  id          String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code        String  @unique @db.VarChar(30)
+  name        String  @db.VarChar(200)
+  category    String  @db.VarChar(100)
+  price       Decimal @db.Decimal(10, 2)
+  taxRate     Decimal @db.Decimal(5, 2) @default(0)
+  isActive    Boolean @default(true)
+  description String? @db.Text
+
+  invoiceItems InvoiceItem[]
+
+  @@map("services")
+}
+
+model Invoice {
+  id               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  invoiceNo        String        @unique @db.VarChar(20)
+  encounterId      String        @db.Uuid
+  patientId        String        @db.Uuid
+  status           InvoiceStatus @default(DRAFT)
+  subtotal         Decimal       @db.Decimal(12, 2)
+  discountAmount   Decimal       @db.Decimal(12, 2) @default(0)
+  taxAmount        Decimal       @db.Decimal(12, 2) @default(0)
+  totalAmount      Decimal       @db.Decimal(12, 2)
+  paidAmount       Decimal       @db.Decimal(12, 2) @default(0)
+  insuranceCoverage Decimal      @db.Decimal(12, 2) @default(0)
+  patientBalance   Decimal       @db.Decimal(12, 2) @default(0)
+  issuedAt         DateTime?
+  dueDate          DateTime?     @db.Date
+  notes            String?       @db.Text
+  createdById      String        @db.Uuid
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  encounter Encounter @relation(fields: [encounterId], references: [id])
+  patient   Patient   @relation(fields: [patientId], references: [id])
+  createdBy User      @relation("CreatedBy", fields: [createdById], references: [id])
+
+  items    InvoiceItem[]
+  payments Payment[]
+  claims   InsuranceClaim[]
+
+  @@index([patientId, status])
+  @@index([status, dueDate])
+  @@map("invoices")
+}
+
+model InvoiceItem {
+  id          String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  invoiceId   String  @db.Uuid
+  serviceId   String  @db.Uuid
+  description String  @db.VarChar(200)
+  quantity    Int     @default(1)
+  unitPrice   Decimal @db.Decimal(10, 2)
+  discount    Decimal @db.Decimal(10, 2) @default(0)
+  total       Decimal @db.Decimal(10, 2)
+  refType     String? @db.VarChar(50)  // LAB_ORDER, PRESCRIPTION, ENCOUNTER
+  refId       String? @db.Uuid
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  service Service @relation(fields: [serviceId], references: [id])
+
+  @@map("invoice_items")
+}
+
+model Payment {
+  id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  invoiceId     String        @db.Uuid
+  amount        Decimal       @db.Decimal(12, 2)
+  method        PaymentMethod
+  referenceNo   String?       @db.VarChar(100)
+  receivedById  String        @db.Uuid
+  paidAt        DateTime      @default(now())
+  notes         String?       @db.Text
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id])
+
+  @@map("payments")
+}
+
+model InsuranceClaim {
+  id              String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  invoiceId       String               @db.Uuid
+  insuranceProvider String             @db.VarChar(100)
+  policyNumber    String               @db.VarChar(50)
+  claimNo         String?              @db.VarChar(50)
+  submittedAmount Decimal              @db.Decimal(12, 2)
+  approvedAmount  Decimal?             @db.Decimal(12, 2)
+  status          InsuranceClaimStatus @default(DRAFT)
+  submittedAt     DateTime?
+  settledAt       DateTime?
+  rejectionReason String?              @db.Text
+  notes           String?              @db.Text
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id])
+
+  @@map("insurance_claims")
+}
+
+// ============================================================
+// MODULE 8 — NOTIFICATIONS
+// ============================================================
+
+model Notification {
+  id         String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String           @db.Uuid
+  type       NotificationType
+  title      String           @db.VarChar(200)
+  body       String           @db.Text
+  refType    String?          @db.VarChar(50)
+  refId      String?          @db.Uuid
+  isRead     Boolean          @default(false)
+  readAt     DateTime?
+  createdAt  DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}

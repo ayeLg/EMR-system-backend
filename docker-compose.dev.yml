@@ -1,0 +1,39 @@
+# Local development infrastructure for the EMR backend.
+# Usage: pnpm docker:up   /   pnpm docker:down
+# These are dev defaults only — never reuse these credentials in production.
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: emr-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: emr
+      POSTGRES_PASSWORD: emr
+      POSTGRES_DB: emr
+    ports:
+      - '5432:5432'
+    volumes:
+      - emr-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U emr -d emr']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: emr-redis
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    volumes:
+      - emr-redisdata:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  emr-pgdata:
+  emr-redisdata:

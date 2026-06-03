@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.json",
+  "comment": "Used by ts-node for prisma seeding — overrides nodenext so relative seeder imports resolve without .js extensions.",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "moduleResolution": "node"
+  },
+  "include": ["prisma/**/*.ts"]
+}

@@ -1,6 +1,7 @@
 import { INestApplication, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { cleanupOpenApiDoc } from 'nestjs-zod';
 import basicAuth from 'express-basic-auth';
 
 export const SWAGGER_BEARER_AUTH = 'access-token';
@@ -49,7 +50,7 @@ export function setupSwagger(app: INestApplication): void {
     .addTag('patients', 'Patient records')
     .build();
 
-  const document = SwaggerModule.createDocument(app, config);
+  const document = cleanupOpenApiDoc(SwaggerModule.createDocument(app, config));
   SwaggerModule.setup('api/docs', app, document, {
     swaggerOptions: {
       persistAuthorization: true,

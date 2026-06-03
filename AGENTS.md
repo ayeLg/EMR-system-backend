@@ -15,11 +15,14 @@ NestJS **starter kit** for an EMR-style backend with:
 
 | Layer | Choice |
 |-------|--------|
+| Runtime | Node.js ≥ 22 (pinned in `.nvmrc` / `engines`) |
 | Framework | NestJS 11 |
+| ORM / DB | Prisma 7 + PostgreSQL 15 via pg driver adapter (`@prisma/adapter-pg`); schema `prisma/schema.prisma`, connection in `prisma.config.ts` |
 | Auth | JWT Bearer tokens |
 | Authorization | CASL + global `PoliciesGuard` |
-| Validation | `class-validator` / `class-transformer` |
-| API docs | `@nestjs/swagger` at `/api/docs` |
+| Validation | **Zod via `nestjs-zod`** (`createZodDto` + global `ZodValidationPipe`); shared schemas with frontend |
+| Security | `helmet`, `compression`, `@nestjs/throttler` (rate limit), AES-256-GCM PHI encryption (`CryptoService`), TOTP 2FA (`TotpService`) |
+| API docs | `@nestjs/swagger` at `/api/docs` (Zod schemas via `cleanupOpenApiDoc`) |
 | Package manager | pnpm |
 | Path alias | `@/*` → `src/*` |
 
@@ -45,16 +48,28 @@ scripts/generate-feature.sh
 ## Commands
 
 ```bash
+nvm use                 # Node 22 (see .nvmrc)
 pnpm install
-pnpm run start:dev      # http://localhost:3000/api
+cp .env.example .env     # then set secrets (see below)
+
+pnpm run docker:up       # local Postgres + Redis (docker-compose.dev.yml)
+pnpm run db:generate     # generate Prisma client
+pnpm run db:migrate      # create/apply dev migration
+pnpm run db:seed         # seed data (prisma/seed.ts)
+
+pnpm run start:dev       # http://localhost:3000/api
 pnpm run build
+pnpm run typecheck       # tsc --noEmit
+pnpm run lint            # eslint --fix   (lint:check for CI, no --fix)
 pnpm run test
-pnpm run test:e2e
-pnpm run lint
+pnpm run test:e2e        # requires docker:up (DB connection)
 ./scripts/generate-feature.sh <kebab> <Pascal>   # e.g. appointments Appointment
 ```
 
-Copy `.env.example` to `.env` and set `JWT_SECRET` before production.
+Copy `.env.example` to `.env`. Required secrets: `DATABASE_URL`, `JWT_SECRET`,
+`JWT_REFRESH_SECRET` (≥16 chars), and `PHI_ENCRYPTION_KEY` (`openssl rand -hex 32`).
+A pre-commit hook (husky) runs `lint-staged`; commit messages must follow
+Conventional Commits (commitlint).
 
 ## Demo accounts
 
@@ -148,7 +163,9 @@ Reference module: **`src/patients/`**
 ## Coding conventions
 
 - Use `@/` path alias for cross-module imports
-- DTOs: `class-validator` decorators; global `ValidationPipe` strips unknown fields
+- DTOs: define a Zod schema, then `export class XDto extends createZodDto(Schema) {}`. The global `ZodValidationPipe` validates request bodies/queries/params. Export the schema too so the frontend can share it. Do **not** add `class-validator` decorators to new DTOs.
+- Persist via `PrismaService` (injectable, global `PrismaModule`) — not in-memory `Map`s
+- Encrypt PHI fields (`first_name`, `last_name`, `nrc_number`, `address`) with `CryptoService` before DB write; decrypt on read
 - Never bypass CASL with ad-hoc `if (user.role === ...)` in controllers — extend `role-permissions.ts` instead
 - Use `@CurrentUser()` to access the authenticated user
 - Use `@Public()` only for truly anonymous endpoints
@@ -170,20 +187,72 @@ Reference module: **`src/patients/`**
 
 When changing `role-permissions.ts`, update CASL unit tests.
 
-## Database migration (future)
+## Database (Prisma 7)
 
-This starter intentionally uses in-memory stores. When adding Prisma/TypeORM:
+Prisma 7 + PostgreSQL via the **pg driver adapter**. `prisma/schema.prisma`
+holds the models (copied from the project-root `schema.prisma`; the datasource
+block has **no `url`** in v7 — keep models in sync with root). Connection wiring:
 
-1. Add module under `src/database/` or use Nest Prisma/TypeORM integration
-2. Replace `Map` in services with repositories
-3. Move seed data to migrations or `prisma/seed.ts`
-4. Keep `User` entity fields aligned with JWT payload (`sub`, `email`, `role`)
+- **`.env`** — `DATABASE_URL` is composed from `DB_*` parts via `${...}` expansion.
+- **`prisma.config.ts`** — loads + expands `.env`, gives Migrate/CLI the `datasource.url` and the `migrations.seed` command.
+- **App runtime** — `PrismaService` (global `PrismaModule`) builds `new PrismaPg(config.database.url)` and passes it as `adapter` to `PrismaClient`; `ConfigModule` has `expandVariables: true`.
+- **CLI scripts** (`prisma/seed.ts`, `prisma/db-check.ts`) — import the shared client `prisma/client.ts`, which loads+expands `.env` and connects via the adapter.
+
+The `users` and `patients` services still use in-memory `Map`s as reference
+demos. When implementing real features:
+
+1. Inject `PrismaService` and replace the `Map` with Prisma queries
+2. Run `pnpm db:migrate` after schema changes; add seeders (see below)
+3. Keep `User` fields aligned with the JWT payload (`sub`, `email`, `role`)
+4. Encrypt PHI with `CryptoService` before writing
+
+### Migrations (Laravel-style)
+
+Prisma migrations are timestamped folders under `prisma/migrations/`, like
+Laravel. The schema is the source of truth — edit `prisma/schema.prisma`, then:
+
+```bash
+pnpm make:migration <name>   # prisma migrate dev --create-only — generates SQL, NOT applied (review it)
+pnpm db:migrate              # apply pending migrations (dev)        ~ php artisan migrate
+pnpm db:deploy               # apply in production (no prompts)
+pnpm db:reset                # drop, re-migrate, re-seed             ~ php artisan migrate:fresh --seed
+```
+
+`make:migration` and `migrate` need the database up (`pnpm docker:up`).
+
+### Seeding (Laravel-style)
+
+Seeders live in `prisma/seeds/` — one file per seeder, each exporting a
+`Seeder` object (`{ name, run(prisma) }`). `prisma/seed.ts` is the
+**DatabaseSeeder**: it lists seeders in dependency order (like Laravel's
+`$this->call([...])`) and runs them.
+
+```bash
+pnpm make:seeder <Name>          # scaffold prisma/seeds/<name>.seeder.ts + auto-register
+pnpm db:seed                     # run all seeders, in order          ~ php artisan db:seed
+pnpm db:seed --only=RolesSeeder  # run one seeder                     ~ --class=RolesSeeder
+```
+
+Rules: keep each seeder **idempotent** (use `upsert`); order dependencies
+before dependents in the `seeders` array; do not remove the
+`<seeder-imports>` / `<seeder-registry>` marker comments in `prisma/seed.ts`
+(the generator uses them to auto-register).
+
+### Checking the connection
+
+```bash
+pnpm db:check   # verifies DB is reachable; prints server version, table & migration counts; exits 1 on failure
+```
+
+Use it before `db:migrate` / `db:seed`, in CI, or to debug "Can't reach
+database server" errors. The password in `DATABASE_URL` is masked in output.
 
 ## Troubleshooting
 
 | Issue | Fix |
 |-------|-----|
 | `Cannot find module '@/...'` | Ensure `tsconfig.json` paths; run `pnpm run build` |
+| `Can't reach database server` | `pnpm docker:up`, then `pnpm db:check` to confirm |
 | 403 on routes | Check `role-permissions.ts` and `@CheckPolicies` handlers |
 | 401 everywhere | Missing/invalid JWT; login via `/api/auth/login` |
 | Password hashing | Uses `bcryptjs` (pure JS, no native build) |

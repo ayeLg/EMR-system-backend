@@ -77,7 +77,7 @@ export class UsersService implements OnModuleInit {
       ];
 
     for (const seed of seeds) {
-      this.users.set(seed.id, new User({ ...seed, passwordHash } as User));
+      this.users.set(seed.id, new User({ ...seed, passwordHash }));
     }
   }
 }

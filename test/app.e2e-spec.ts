@@ -29,7 +29,8 @@ describe('App (e2e)', () => {
       .get('/api/health')
       .expect(200)
       .expect((res) => {
-        expect(res.body.status).toBe('ok');
+        const body = res.body as { status: string };
+        expect(body.status).toBe('ok');
       });
   });
 
@@ -41,8 +42,12 @@ describe('App (e2e)', () => {
         expect([200, 201]).toContain(res.status);
       })
       .expect((res) => {
-        expect(res.body.accessToken).toBeDefined();
-        expect(res.body.user.role).toBe('doctor');
+        const body = res.body as {
+          accessToken: string;
+          user: { role: string };
+        };
+        expect(body.accessToken).toBeDefined();
+        expect(body.user.role).toBe('doctor');
       });
   });
 });
