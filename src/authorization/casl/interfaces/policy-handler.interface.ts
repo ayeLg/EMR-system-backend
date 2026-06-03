@@ -1,4 +1,4 @@
-import { AppAbility } from '@/casl/types';
+import { AppAbility } from '@/authorization/casl/types';
 
 export interface IPolicyHandler {
   handle(ability: AppAbility): boolean;

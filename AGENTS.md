@@ -33,13 +33,15 @@ src/
   app.module.ts          # Root module, global guards
   main.ts                # Bootstrap, global prefix `api`, ValidationPipe
   auth/                  # Login, JWT strategy
-  casl/                  # Ability factory, types, CASL module
+  authorization/
+    casl/                # Ability factory, types, CASL module
+    roles/               # Role enum + permission matrix
+  modules/
+    health/              # Public health check
+    patients/            # Example feature (reference implementation)
+    users/               # User shape + in-memory store
   common/                # Guards, decorators, metadata keys
   config/                # Env config + validation
-  health/                # Public health check
-  patients/              # Example feature (reference implementation)
-  roles/                 # Role enum + permission matrix
-  users/                 # User entity + in-memory store
 templates/feature/       # Scaffold for new modules
 docs/ADDING_FEATURES.md  # Feature checklist
 scripts/generate-feature.sh
@@ -117,23 +119,23 @@ When adding endpoints, decorate controllers with `@ApiTags`, `@ApiOperation`, `@
 
 ### Key files
 
-- `src/casl/casl-ability.factory.ts` — builds `AppAbility` per user
-- `src/roles/role-permissions.ts` — **single source of truth** for role → action rules
-- `src/casl/types/subjects.ts` — register every entity class CASL should know
-- `src/<feature>/policies/*.policies.ts` — route-level policy callbacks
+- `src/authorization/casl/casl-ability.factory.ts` — builds `AppAbility` per user
+- `src/authorization/roles/role-permissions.ts` — **single source of truth** for role → action rules
+- `src/authorization/casl/types/subjects.ts` — register every subject string CASL should know
+- `src/modules/<feature>/policies/*.policies.ts` — route-level policy callbacks
 
 ### Actions
 
-`manage`, `create`, `read`, `update`, `delete` — see `src/casl/types/action.enum.ts`
+`manage`, `create`, `read`, `update`, `delete` — see `src/authorization/casl/types/action.enum.ts`
 
 `Action.Manage` on a subject implies all actions.
 
 ### Adding permissions for a new entity
 
-1. Create entity class (e.g. `Appointment`)
-2. Add to `AppSubjects` in `src/casl/types/subjects.ts`
-3. Add rules in `src/roles/role-permissions.ts` for each `Role`
-4. Create policy helpers in `src/<feature>/policies/`
+1. Create the module data shape (e.g. `Appointment` interface/type)
+2. Add a subject constant to `src/authorization/casl/types/subjects.ts`
+3. Add rules in `src/authorization/roles/role-permissions.ts` for each `Role`
+4. Create policy helpers in `src/modules/<feature>/policies/`
 5. Decorate controller methods with `@CheckPolicies(...)`
 
 ### Instance-level access
@@ -142,10 +144,10 @@ When rules need ownership (e.g. doctor updates only assigned patients):
 
 ```typescript
 // role-permissions.ts
-{ action: Action.Update, subject: Patient, conditions: { assignedDoctorId: '{{userId}}' } }
+{ action: Action.Update, subject: APPOINTMENT_SUBJECT, conditions: { assignedDoctorId: '{{userId}}' } }
 ```
 
-At runtime, pass the **entity instance** to `ability.can(Action.Update, patient)` in services when filtering lists or validating updates.
+At runtime, pass a subject name or typed subject object to `ability.can()` in services when filtering lists or validating updates.
 
 ## Adding a new feature (agent workflow)
 
@@ -153,8 +155,8 @@ Follow this order every time:
 
 1. Run `./scripts/generate-feature.sh <kebab> <Pascal>` or copy `templates/feature/`
 2. Register `<Pascal>Module` in `src/app.module.ts`
-3. Register entity in `src/casl/types/subjects.ts`
-4. Add entries to `src/roles/role-permissions.ts`
+3. Register a subject constant in `src/authorization/casl/types/subjects.ts`
+4. Add entries to `src/authorization/roles/role-permissions.ts`
 5. Implement service persistence (repository/ORM) — **do not** leave in-memory stores in production paths unless explicitly requested
 6. Ensure every controller route has `@CheckPolicies()` or `@Public()`
 7. Add unit tests for service and CASL rules
@@ -162,7 +164,7 @@ Follow this order every time:
 
 Detailed checklist: [docs/ADDING_FEATURES.md](docs/ADDING_FEATURES.md)
 
-Reference module: **`src/patients/`**
+Reference module: **`src/modules/patients/`**
 
 ## Coding conventions
 
@@ -173,7 +175,7 @@ Reference module: **`src/patients/`**
 - Never bypass CASL with ad-hoc `if (user.role === ...)` in controllers — extend `role-permissions.ts` instead
 - Use `@CurrentUser()` to access the authenticated user
 - Use `@Public()` only for truly anonymous endpoints
-- Keep modules focused: one domain per folder under `src/`
+- Keep feature modules focused: one domain per folder under `src/modules/`
 - Prefer explicit policy functions (`readPatientPolicy()`) over inline lambdas in controllers
 
 ## What not to do
@@ -185,7 +187,7 @@ Reference module: **`src/patients/`**
 
 ## Testing expectations
 
-- `src/casl/casl-ability.factory.spec.ts` — role/ability matrix regressions
+- `src/authorization/casl/casl-ability.factory.spec.ts` — role/ability matrix regressions
 - Feature services — CRUD and not-found paths
 - E2E — `test/app.e2e-spec.ts` for health + auth smoke tests
 

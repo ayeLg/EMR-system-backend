@@ -1,1 +1,7 @@
+# 1) Format staged files (prettier — no type info needed, safe with lint-staged)
 pnpm exec lint-staged
+
+# 2) Type-aware lint on the WHOLE project (full type info → accurate file:line:rule,
+#    no false "cannot be resolved" errors that lint-staged's stash caused).
+#    Blocks the commit if real lint errors exist.
+pnpm lint:check

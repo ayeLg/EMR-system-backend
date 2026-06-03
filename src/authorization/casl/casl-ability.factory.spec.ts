@@ -1,8 +1,8 @@
 import { CaslAbilityFactory } from './casl-ability.factory';
 import { Action } from './types';
 import { PATIENT_SUBJECT } from './types/subjects';
-import { Role } from '@/roles/role.enum';
-import type { User } from '@/users/entities/user.entity';
+import { Role } from '@/authorization/roles/role.enum';
+import type { User } from '@/modules/users/entities/user.entity';
 
 describe('CaslAbilityFactory', () => {
   const factory = new CaslAbilityFactory();

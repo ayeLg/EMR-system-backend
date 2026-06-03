@@ -1,5 +1,5 @@
 import { createZodDto } from 'nestjs-zod';
-import { CreatePatientSchema } from '@/patients/dto/create-patient.dto';
+import { CreatePatientSchema } from '@/modules/patients/dto/create-patient.dto';
 
 export const UpdatePatientSchema = CreatePatientSchema.partial();
 

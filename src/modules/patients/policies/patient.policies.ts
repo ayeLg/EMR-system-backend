@@ -1,6 +1,6 @@
-import { Action } from '@/casl/types';
-import { PolicyHandlerCallback } from '@/casl/interfaces/policy-handler.interface';
-import { PATIENT_SUBJECT } from '@/casl/types/subjects';
+import { Action } from '@/authorization/casl/types';
+import { PolicyHandlerCallback } from '@/authorization/casl/interfaces/policy-handler.interface';
+import { PATIENT_SUBJECT } from '@/authorization/casl/types/subjects';
 
 export const readPatientPolicy = (): PolicyHandlerCallback => (ability) =>
   ability.can(Action.Read, PATIENT_SUBJECT);

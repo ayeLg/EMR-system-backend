@@ -1,5 +1,5 @@
-import { Action } from '@/casl/types';
-import { PolicyHandlerCallback } from '@/casl/interfaces/policy-handler.interface';
+import { Action } from '@/authorization/casl/types';
+import { PolicyHandlerCallback } from '@/authorization/casl/interfaces/policy-handler.interface';
 
 export const read__Feature__Policy = (): PolicyHandlerCallback => (ability) =>
   ability.can(Action.Read, '__Feature__');

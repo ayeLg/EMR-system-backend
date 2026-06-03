@@ -5,7 +5,7 @@ NestJS starter kit with **JWT auth** and **RBAC using CASL**. Includes an exampl
 ## Features
 
 - Global JWT guard with `@Public()` opt-out
-- CASL ability factory driven by `src/roles/role-permissions.ts`
+- CASL ability factory driven by `src/authorization/roles/role-permissions.ts`
 - Route policies via `@CheckPolicies()` and `PoliciesGuard`
 - Feature generator: `scripts/generate-feature.sh`
 - In-memory demo users and patients (swap for a database when ready)
@@ -81,7 +81,7 @@ Then follow [docs/ADDING_FEATURES.md](docs/ADDING_FEATURES.md).
 - **[AGENTS.md](AGENTS.md)** — conventions and agent workflow
 - **[docs/developer-workflow.md](docs/developer-workflow.md)** — local dev workflow and DX commands
 - **[docs/ADDING_FEATURES.md](docs/ADDING_FEATURES.md)** — feature checklist
-- **`src/patients/`** — reference feature module
+- **`src/modules/patients/`** — reference feature module
 
 ## License
 

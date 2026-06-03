@@ -103,7 +103,7 @@ strict TypeScript diagnostics config directly. It enables
 `strictPropertyInitialization`, so it catches entity-class issues such as:
 
 ```text
-src/patients/entities/patient.entity.ts
+src/modules/patients/entities/patient.entity.ts
   2:3  TS2564  Property 'id' has no initializer...
 ```
 

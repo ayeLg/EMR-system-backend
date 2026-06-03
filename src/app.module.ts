@@ -6,13 +6,13 @@ import configuration from '@/config/configuration';
 import { validate } from '@/config/env.validation';
 import { PrismaModule } from '@/prisma/prisma.module';
 import { SecurityModule } from '@/common/security/security.module';
-import { CaslModule } from '@/casl/casl.module';
+import { CaslModule } from '@/authorization/casl/casl.module';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { PoliciesGuard } from '@/common/guards/policies.guard';
 import { AuthModule } from '@/auth/auth.module';
-import { HealthModule } from '@/health/health.module';
-import { PatientsModule } from '@/patients/patients.module';
-import { UsersModule } from '@/users/users.module';
+import { HealthModule } from '@/modules/health/health.module';
+import { PatientsModule } from '@/modules/patients/patients.module';
+import { UsersModule } from '@/modules/users/users.module';
 
 @Module({
   imports: [

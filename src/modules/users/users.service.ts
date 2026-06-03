@@ -1,6 +1,6 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
-import { Role } from '@/roles/role.enum';
+import { Role } from '@/authorization/roles/role.enum';
 import type { User, UserRecord } from './entities/user.entity';
 
 @Injectable()

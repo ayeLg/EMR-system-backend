@@ -5,13 +5,13 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { CaslAbilityFactory } from '@/casl/casl-ability.factory';
+import { CaslAbilityFactory } from '@/authorization/casl/casl-ability.factory';
 import { CHECK_POLICIES_KEY } from '@/common/constants/metadata-keys';
 import {
   IPolicyHandler,
   PolicyHandler,
-} from '@/casl/interfaces/policy-handler.interface';
-import type { User } from '@/users/entities/user.entity';
+} from '@/authorization/casl/interfaces/policy-handler.interface';
+import type { User } from '@/modules/users/entities/user.entity';
 
 @Injectable()
 export class PoliciesGuard implements CanActivate {

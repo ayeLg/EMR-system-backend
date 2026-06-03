@@ -1,9 +1,9 @@
-import { Action } from '@/casl/types';
+import { Action } from '@/authorization/casl/types';
 import {
   AppSubjects,
   PATIENT_SUBJECT,
   USER_SUBJECT,
-} from '@/casl/types/subjects';
+} from '@/authorization/casl/types/subjects';
 import { Role } from './role.enum';
 
 export interface RoleRule {

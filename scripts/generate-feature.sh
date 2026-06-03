@@ -15,7 +15,7 @@ PASCAL="$2"
 PRISMA="${3:-$(printf '%s' "$PASCAL" | awk '{ print tolower(substr($0, 1, 1)) substr($0, 2) }')}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 TEMPLATE_DIR="$ROOT/templates/feature"
-TARGET_DIR="$ROOT/src/$KEBAB"
+TARGET_DIR="$ROOT/src/modules/$KEBAB"
 
 if [ -d "$TARGET_DIR" ]; then
   echo "Directory already exists: $TARGET_DIR"
@@ -41,10 +41,10 @@ render "$TEMPLATE_DIR/dto/list-__feature__.dto.ts" > "$TARGET_DIR/dto/list-$KEBA
 render "$TEMPLATE_DIR/dto/update-__feature__.dto.ts" > "$TARGET_DIR/dto/update-$KEBAB.dto.ts"
 render "$TEMPLATE_DIR/policies/__feature__.policies.ts" > "$TARGET_DIR/policies/$KEBAB.policies.ts"
 
-echo "Created feature at src/$KEBAB"
+echo "Created feature at src/modules/$KEBAB"
 echo "Next steps:"
 echo "  1. Register ${PASCAL}Module in src/app.module.ts"
-echo "  2. Add ${PASCAL} to src/casl/types/subjects.ts"
-echo "  3. Add role rules in src/roles/role-permissions.ts"
+echo "  2. Add ${PASCAL} to src/authorization/casl/types/subjects.ts"
+echo "  3. Add role rules in src/authorization/roles/role-permissions.ts"
 echo "  4. Confirm Prisma delegate name: ${PRISMA}"
 echo "  5. Replace placeholder DTO/search fields with real ${PASCAL} fields"
