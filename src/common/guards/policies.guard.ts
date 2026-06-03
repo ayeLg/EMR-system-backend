@@ -11,7 +11,7 @@ import {
   IPolicyHandler,
   PolicyHandler,
 } from '@/casl/interfaces/policy-handler.interface';
-import { User } from '@/users/entities/user.entity';
+import type { User } from '@/users/entities/user.entity';
 
 @Injectable()
 export class PoliciesGuard implements CanActivate {

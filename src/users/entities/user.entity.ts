@@ -1,16 +1,15 @@
 import { Role } from '@/roles/role.enum';
 
-export class User {
-  id!: string;
-  email!: string;
-  passwordHash!: string;
-  fullName!: string;
-  role!: Role;
-  isActive!: boolean;
-  createdAt!: Date;
-  updatedAt!: Date;
+export interface User {
+  id: string;
+  email: string;
+  fullName: string;
+  role: Role;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
-  constructor(partial: Partial<User>) {
-    Object.assign(this, partial);
-  }
+export interface UserRecord extends User {
+  passwordHash: string;
 }

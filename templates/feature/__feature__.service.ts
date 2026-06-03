@@ -3,7 +3,7 @@ import { PrismaService } from '@/prisma/prisma.service';
 import { Create__Feature__Dto } from './dto/create-__feature__.dto';
 import { List__Feature__Dto } from './dto/list-__feature__.dto';
 import { Update__Feature__Dto } from './dto/update-__feature__.dto';
-import { __Feature__ } from './entities/__feature__.entity';
+import type { __Feature__ } from './entities/__feature__.entity';
 
 interface PrismaCrudDelegate {
   findMany(args: Record<string, unknown>): Promise<Record<string, unknown>[]>;
@@ -49,7 +49,7 @@ export class __Feature__Service {
     ]);
 
     return {
-      data: rows.map((row) => new __Feature__(row)),
+      data: rows.map((row) => row as __Feature__),
       meta: {
         page,
         limit,
@@ -64,14 +64,14 @@ export class __Feature__Service {
     if (!row) {
       throw new NotFoundException(`__Feature__ ${id} not found`);
     }
-    return new __Feature__(row);
+    return row as __Feature__;
   }
 
   async create(dto: Create__Feature__Dto): Promise<__Feature__> {
     const row = await this.repo.create({
       data: { ...dto },
     });
-    return new __Feature__(row);
+    return row as __Feature__;
   }
 
   async update(id: string, dto: Update__Feature__Dto): Promise<__Feature__> {
@@ -80,7 +80,7 @@ export class __Feature__Service {
       where: { id },
       data: { ...dto },
     });
-    return new __Feature__(row);
+    return row as __Feature__;
   }
 
   async remove(id: string): Promise<{ deleted: true }> {

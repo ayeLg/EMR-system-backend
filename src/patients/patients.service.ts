@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { CreatePatientDto } from './dto/create-patient.dto';
 import { UpdatePatientDto } from './dto/update-patient.dto';
-import { Patient } from './entities/patient.entity';
+import type { Patient } from './entities/patient.entity';
 
 @Injectable()
 export class PatientsService implements OnModuleInit {
@@ -13,19 +13,16 @@ export class PatientsService implements OnModuleInit {
       return;
     }
     const now = new Date();
-    this.patients.set(
-      'p1',
-      new Patient({
-        id: 'p1',
-        mrn: 'MRN-001',
-        firstName: 'John',
-        lastName: 'Smith',
-        dateOfBirth: '1985-03-15',
-        assignedDoctorId: '2',
-        createdAt: now,
-        updatedAt: now,
-      }),
-    );
+    this.patients.set('p1', {
+      id: 'p1',
+      mrn: 'MRN-001',
+      firstName: 'John',
+      lastName: 'Smith',
+      dateOfBirth: '1985-03-15',
+      assignedDoctorId: '2',
+      createdAt: now,
+      updatedAt: now,
+    });
   }
 
   findAll(): Patient[] {
@@ -42,23 +39,23 @@ export class PatientsService implements OnModuleInit {
 
   create(dto: CreatePatientDto): Patient {
     const now = new Date();
-    const patient = new Patient({
+    const patient: Patient = {
       id: randomUUID(),
       ...dto,
       createdAt: now,
       updatedAt: now,
-    });
+    };
     this.patients.set(patient.id, patient);
     return patient;
   }
 
   update(id: string, dto: UpdatePatientDto): Patient {
     const existing = this.findOne(id);
-    const updated = new Patient({
+    const updated: Patient = {
       ...existing,
       ...dto,
       updatedAt: new Date(),
-    });
+    };
     this.patients.set(id, updated);
     return updated;
   }

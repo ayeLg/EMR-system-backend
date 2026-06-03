@@ -2,7 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { UsersService } from '@/users/users.service';
-import { User } from '@/users/entities/user.entity';
+import type { User, UserRecord } from '@/users/entities/user.entity';
 import { LoginDto } from './dto/login.dto';
 
 export interface JwtPayload {
@@ -18,7 +18,10 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async validateUser(email: string, password: string): Promise<User | null> {
+  async validateUser(
+    email: string,
+    password: string,
+  ): Promise<UserRecord | null> {
     const user = this.usersService.findByEmail(email);
     if (!user?.isActive) {
       return null;
