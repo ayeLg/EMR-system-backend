@@ -86,6 +86,27 @@ PRISMA_QUERY_LOGGING=true
 Every HTTP response receives an `x-request-id` header. Passing an incoming
 `x-request-id` preserves it, which makes frontend/backend debugging easier.
 
+## Diagnostics
+
+Use diagnostics when the editor shows TypeScript or static-analysis problems
+that are not obvious build failures:
+
+```bash
+pnpm diagnose
+pnpm diagnose --types-only
+pnpm diagnose:types
+```
+
+`pnpm diagnose` reports TypeScript editor diagnostics, ESLint findings, and
+Prisma schema validation in grouped sections. `pnpm diagnose:types` runs the
+strict TypeScript diagnostics config directly. It enables
+`strictPropertyInitialization`, so it catches entity-class issues such as:
+
+```text
+src/patients/entities/patient.entity.ts
+  2:3  TS2564  Property 'id' has no initializer...
+```
+
 ## Feature generation
 
 ```bash

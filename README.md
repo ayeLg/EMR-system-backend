@@ -68,6 +68,7 @@ Then follow [docs/ADDING_FEATURES.md](docs/ADDING_FEATURES.md).
 | `pnpm run start:dev` | Dev server with watch                           |
 | `pnpm setup`         | One-command local setup                         |
 | `pnpm run build`     | Production build                                |
+| `pnpm diagnose`      | Grouped static diagnostics for editor issues    |
 | `pnpm run test`      | Unit tests                                      |
 | `pnpm run test:e2e`  | E2E tests                                       |
 | `pnpm run lint`      | ESLint                                          |

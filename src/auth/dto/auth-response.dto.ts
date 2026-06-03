@@ -6,13 +6,13 @@ export class AuthResponseDto {
     description: 'JWT access token',
     example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
   })
-  accessToken: string;
+  accessToken!: string;
 
   @ApiProperty({ type: UserResponseDto })
-  user: UserResponseDto;
+  user!: UserResponseDto;
 }
 
 export class MeResponseDto {
   @ApiProperty({ type: UserResponseDto })
-  user: UserResponseDto;
+  user!: UserResponseDto;
 }

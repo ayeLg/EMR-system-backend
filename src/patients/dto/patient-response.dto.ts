@@ -2,31 +2,31 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class PatientResponseDto {
   @ApiProperty({ example: 'p1' })
-  id: string;
+  id!: string;
 
   @ApiProperty({ example: 'MRN-001' })
-  mrn: string;
+  mrn!: string;
 
   @ApiProperty({ example: 'John' })
-  firstName: string;
+  firstName!: string;
 
   @ApiProperty({ example: 'Smith' })
-  lastName: string;
+  lastName!: string;
 
   @ApiProperty({ example: '1985-03-15' })
-  dateOfBirth: string;
+  dateOfBirth!: string;
 
   @ApiPropertyOptional({ example: '2' })
   assignedDoctorId?: string;
 
   @ApiProperty()
-  createdAt: Date;
+  createdAt!: Date;
 
   @ApiProperty()
-  updatedAt: Date;
+  updatedAt!: Date;
 }
 
 export class DeletePatientResponseDto {
   @ApiProperty({ example: true })
-  deleted: boolean;
+  deleted!: boolean;
 }
