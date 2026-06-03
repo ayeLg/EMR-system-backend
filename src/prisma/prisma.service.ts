@@ -24,7 +24,12 @@ export class PrismaService
   private readonly logger = new Logger(PrismaService.name);
 
   constructor(config: ConfigService) {
-    super({ adapter: new PrismaPg(config.getOrThrow<string>('database.url')) });
+    super({
+      adapter: new PrismaPg(config.getOrThrow<string>('database.url')),
+      log: config.get<boolean>('database.queryLogging', false)
+        ? ['query', 'warn', 'error']
+        : ['warn', 'error'],
+    });
   }
 
   async onModuleInit(): Promise<void> {

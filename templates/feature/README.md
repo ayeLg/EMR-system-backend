@@ -17,7 +17,8 @@ After creating `src/<feature>/`:
 2. **CASL subject** — add the entity class to `src/casl/types/subjects.ts`
 3. **Role permissions** — add rules in `src/roles/role-permissions.ts` per role
 4. **Policies** — wire `@CheckPolicies()` on each controller route
-5. **Persistence** — replace the in-memory `Map` in the service with your ORM repository
-6. **Tests** — add unit tests for service and `*.policies.ts` behavior via `CaslAbilityFactory`
+5. **Persistence** — pass the Prisma delegate name to the generator or update `__prisma__` in the service
+6. **DTO fields** — replace the placeholder `name` field with the model's real create/update shape
+7. **Search** — add model-specific search fields in `buildSearchWhere()`
 
 See [docs/ADDING_FEATURES.md](../docs/ADDING_FEATURES.md) and [AGENTS.md](../AGENTS.md) for full guidance.

@@ -1,6 +1,6 @@
 import { INestApplication, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { DocumentBuilder, OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
 import { cleanupOpenApiDoc } from 'nestjs-zod';
 import basicAuth from 'express-basic-auth';
 
@@ -8,26 +8,7 @@ export const SWAGGER_BEARER_AUTH = 'access-token';
 
 const SWAGGER_PATHS = ['/api/docs', '/api/docs-json'] as const;
 
-export function setupSwagger(app: INestApplication): void {
-  const configService = app.get(ConfigService);
-  const enabled = configService.get<boolean>('swagger.enabled', true);
-
-  if (!enabled) {
-    Logger.log('Swagger UI disabled (SWAGGER_ENABLED=false)', 'Swagger');
-    return;
-  }
-
-  const user = configService.getOrThrow<string>('swagger.user');
-  const password = configService.getOrThrow<string>('swagger.password');
-
-  app.use(
-    [...SWAGGER_PATHS],
-    basicAuth({
-      challenge: true,
-      users: { [user]: password },
-    }),
-  );
-
+export function createOpenApiDocument(app: INestApplication): OpenAPIObject {
   const config = new DocumentBuilder()
     .setTitle('EMR System API')
     .setDescription(
@@ -50,7 +31,30 @@ export function setupSwagger(app: INestApplication): void {
     .addTag('patients', 'Patient records')
     .build();
 
-  const document = cleanupOpenApiDoc(SwaggerModule.createDocument(app, config));
+  return cleanupOpenApiDoc(SwaggerModule.createDocument(app, config));
+}
+
+export function setupSwagger(app: INestApplication): void {
+  const configService = app.get(ConfigService);
+  const enabled = configService.get<boolean>('swagger.enabled', true);
+
+  if (!enabled) {
+    Logger.log('Swagger UI disabled (SWAGGER_ENABLED=false)', 'Swagger');
+    return;
+  }
+
+  const user = configService.getOrThrow<string>('swagger.user');
+  const password = configService.getOrThrow<string>('swagger.password');
+
+  app.use(
+    [...SWAGGER_PATHS],
+    basicAuth({
+      challenge: true,
+      users: { [user]: password },
+    }),
+  );
+
+  const document = createOpenApiDocument(app);
   SwaggerModule.setup('api/docs', app, document, {
     swaggerOptions: {
       persistAuthorization: true,

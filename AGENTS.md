@@ -13,18 +13,18 @@ NestJS **starter kit** for an EMR-style backend with:
 
 ## Tech stack
 
-| Layer | Choice |
-|-------|--------|
-| Runtime | Node.js ≥ 22 (pinned in `.nvmrc` / `engines`) |
-| Framework | NestJS 11 |
-| ORM / DB | Prisma 7 + PostgreSQL 15 via pg driver adapter (`@prisma/adapter-pg`); schema `prisma/schema.prisma`, connection in `prisma.config.ts` |
-| Auth | JWT Bearer tokens |
-| Authorization | CASL + global `PoliciesGuard` |
-| Validation | **Zod via `nestjs-zod`** (`createZodDto` + global `ZodValidationPipe`); shared schemas with frontend |
-| Security | `helmet`, `compression`, `@nestjs/throttler` (rate limit), AES-256-GCM PHI encryption (`CryptoService`), TOTP 2FA (`TotpService`) |
-| API docs | `@nestjs/swagger` at `/api/docs` (Zod schemas via `cleanupOpenApiDoc`) |
-| Package manager | pnpm |
-| Path alias | `@/*` → `src/*` |
+| Layer           | Choice                                                                                                                                 |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Runtime         | Node.js ≥ 22 (pinned in `.nvmrc` / `engines`)                                                                                          |
+| Framework       | NestJS 11                                                                                                                              |
+| ORM / DB        | Prisma 7 + PostgreSQL 15 via pg driver adapter (`@prisma/adapter-pg`); schema `prisma/schema.prisma`, connection in `prisma.config.ts` |
+| Auth            | JWT Bearer tokens                                                                                                                      |
+| Authorization   | CASL + global `PoliciesGuard`                                                                                                          |
+| Validation      | **Zod via `nestjs-zod`** (`createZodDto` + global `ZodValidationPipe`); shared schemas with frontend                                   |
+| Security        | `helmet`, `compression`, `@nestjs/throttler` (rate limit), AES-256-GCM PHI encryption (`CryptoService`), TOTP 2FA (`TotpService`)      |
+| API docs        | `@nestjs/swagger` at `/api/docs` (Zod schemas via `cleanupOpenApiDoc`)                                                                 |
+| Package manager | pnpm                                                                                                                                   |
+| Path alias      | `@/*` → `src/*`                                                                                                                        |
 
 ## Repository layout
 
@@ -52,10 +52,14 @@ nvm use                 # Node 22 (see .nvmrc)
 pnpm install
 cp .env.example .env     # then set secrets (see below)
 
+pnpm setup               # one-command local bootstrap
 pnpm run docker:up       # local Postgres + Redis (docker-compose.dev.yml)
 pnpm run db:generate     # generate Prisma client
 pnpm run db:migrate      # create/apply dev migration
 pnpm run db:seed         # seed data (prisma/seed.ts)
+pnpm run db:status       # migration status
+pnpm run db:fresh        # reset local DB, seed, check
+pnpm run api:openapi     # export generated/openapi.json
 
 pnpm run start:dev       # http://localhost:3000/api
 pnpm run build
@@ -63,7 +67,7 @@ pnpm run typecheck       # tsc --noEmit
 pnpm run lint            # eslint --fix   (lint:check for CI, no --fix)
 pnpm run test
 pnpm run test:e2e        # requires docker:up (DB connection)
-./scripts/generate-feature.sh <kebab> <Pascal>   # e.g. appointments Appointment
+./scripts/generate-feature.sh <kebab> <Pascal> [prismaDelegate]
 ```
 
 Copy `.env.example` to `.env`. Required secrets: `DATABASE_URL`, `JWT_SECRET`,
@@ -75,21 +79,21 @@ Conventional Commits (commitlint).
 
 All passwords: `password123`
 
-| Email | Role |
-|-------|------|
-| admin@example.com | super_admin |
-| doctor@example.com | doctor |
-| nurse@example.com | nurse |
+| Email                 | Role         |
+| --------------------- | ------------ |
+| admin@example.com     | super_admin  |
+| doctor@example.com    | doctor       |
+| nurse@example.com     | nurse        |
 | reception@example.com | receptionist |
 
 ## API overview
 
-| Method | Path | Auth | Notes |
-|--------|------|------|-------|
-| GET | `/api/health` | Public | Liveness |
-| POST | `/api/auth/login` | Public | Returns `accessToken` + `user` |
-| GET | `/api/auth/me` | JWT | Current user |
-| CRUD | `/api/patients` | JWT + CASL | Example feature |
+| Method | Path              | Auth       | Notes                          |
+| ------ | ----------------- | ---------- | ------------------------------ |
+| GET    | `/api/health`     | Public     | Liveness                       |
+| POST   | `/api/auth/login` | Public     | Returns `accessToken` + `user` |
+| GET    | `/api/auth/me`    | JWT        | Current user                   |
+| CRUD   | `/api/patients`   | JWT + CASL | Example feature                |
 
 Send JWT as: `Authorization: Bearer <token>`
 
@@ -199,7 +203,8 @@ block has **no `url`** in v7 — keep models in sync with root). Connection wiri
 - **CLI scripts** (`prisma/seed.ts`, `prisma/db-check.ts`) — import the shared client `prisma/client.ts`, which loads+expands `.env` and connects via the adapter.
 
 The `users` and `patients` services still use in-memory `Map`s as reference
-demos. When implementing real features:
+demos. Generated feature modules use `PrismaService` and a placeholder Prisma
+delegate. When implementing real features:
 
 1. Inject `PrismaService` and replace the `Map` with Prisma queries
 2. Run `pnpm db:migrate` after schema changes; add seeders (see below)
@@ -214,8 +219,10 @@ Laravel. The schema is the source of truth — edit `prisma/schema.prisma`, then
 ```bash
 pnpm make:migration <name>   # prisma migrate dev --create-only — generates SQL, NOT applied (review it)
 pnpm db:migrate              # apply pending migrations (dev)        ~ php artisan migrate
+pnpm db:status               # inspect migration status
 pnpm db:deploy               # apply in production (no prompts)
 pnpm db:reset                # drop, re-migrate, re-seed             ~ php artisan migrate:fresh --seed
+pnpm db:fresh                # guarded local reset + seed + db:check
 ```
 
 `make:migration` and `migrate` need the database up (`pnpm docker:up`).
@@ -249,15 +256,18 @@ database server" errors. The password in `DATABASE_URL` is masked in output.
 
 ## Troubleshooting
 
-| Issue | Fix |
-|-------|-----|
-| `Cannot find module '@/...'` | Ensure `tsconfig.json` paths; run `pnpm run build` |
-| `Can't reach database server` | `pnpm docker:up`, then `pnpm db:check` to confirm |
-| 403 on routes | Check `role-permissions.ts` and `@CheckPolicies` handlers |
-| 401 everywhere | Missing/invalid JWT; login via `/api/auth/login` |
-| Password hashing | Uses `bcryptjs` (pure JS, no native build) |
+| Issue                         | Fix                                                       |
+| ----------------------------- | --------------------------------------------------------- |
+| `Cannot find module '@/...'`  | Ensure `tsconfig.json` paths; run `pnpm run build`        |
+| `Can't reach database server` | `pnpm docker:up`, then `pnpm db:check` to confirm         |
+| 403 on routes                 | Check `role-permissions.ts` and `@CheckPolicies` handlers |
+| 401 everywhere                | Missing/invalid JWT; login via `/api/auth/login`          |
+| Password hashing              | Uses `bcryptjs` (pure JS, no native build)                |
 
 ## Related docs
+
+- [docs/developer-workflow.md](docs/developer-workflow.md) — local setup,
+  database helpers, feature generation, and OpenAPI export.
 
 - [docs/ADDING_FEATURES.md](docs/ADDING_FEATURES.md)
 - [templates/feature/README.md](templates/feature/README.md)

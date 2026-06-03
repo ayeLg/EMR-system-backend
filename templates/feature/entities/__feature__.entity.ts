@@ -1,10 +1,12 @@
 export class __Feature__ {
-  id: string;
-  name: string;
-  createdAt: Date;
-  updatedAt: Date;
+  [key: string]: unknown;
 
-  constructor(partial: Partial<__Feature__>) {
+  id: string;
+  name?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+
+  constructor(partial: Partial<__Feature__> & Record<string, unknown>) {
     Object.assign(this, partial);
   }
 }

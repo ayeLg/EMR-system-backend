@@ -1,8 +1,8 @@
-import { IsOptional, IsString, MinLength } from 'class-validator';
+import { createZodDto } from 'nestjs-zod';
+import { Create__Feature__Schema } from './create-__feature__.dto';
 
-export class Update__Feature__Dto {
-  @IsOptional()
-  @IsString()
-  @MinLength(1)
-  name?: string;
-}
+export const Update__Feature__Schema = Create__Feature__Schema.partial();
+
+export class Update__Feature__Dto extends createZodDto(
+  Update__Feature__Schema,
+) {}

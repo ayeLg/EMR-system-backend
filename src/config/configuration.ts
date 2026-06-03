@@ -3,6 +3,7 @@ export default () => ({
   nodeEnv: process.env.NODE_ENV ?? 'development',
   database: {
     url: process.env.DATABASE_URL,
+    queryLogging: process.env.PRISMA_QUERY_LOGGING === 'true',
   },
   jwt: {
     secret: process.env.JWT_SECRET ?? 'change-me-in-production',
@@ -19,6 +20,12 @@ export default () => ({
   throttle: {
     ttl: Number.parseInt(process.env.THROTTLE_TTL ?? '60000', 10),
     limit: Number.parseInt(process.env.THROTTLE_LIMIT ?? '100', 10),
+  },
+  logging: {
+    requests:
+      process.env.REQUEST_LOGGING_ENABLED === undefined
+        ? (process.env.NODE_ENV ?? 'development') !== 'production'
+        : process.env.REQUEST_LOGGING_ENABLED === 'true',
   },
   cors: {
     origin: process.env.CORS_ORIGIN ?? '*',

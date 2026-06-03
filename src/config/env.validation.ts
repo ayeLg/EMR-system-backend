@@ -13,6 +13,7 @@ const EnvSchema = z.object({
 
   // Database
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
+  PRISMA_QUERY_LOGGING: z.enum(['true', 'false']).default('false'),
 
   // Auth
   JWT_SECRET: z.string().min(16, 'JWT_SECRET must be at least 16 chars'),
@@ -36,6 +37,9 @@ const EnvSchema = z.object({
   // Rate limiting
   THROTTLE_TTL: z.coerce.number().int().positive().default(60_000),
   THROTTLE_LIMIT: z.coerce.number().int().positive().default(100),
+
+  // Developer observability
+  REQUEST_LOGGING_ENABLED: z.enum(['true', 'false']).optional(),
 
   // CORS
   CORS_ORIGIN: z.string().default('*'),
