@@ -20,12 +20,14 @@
     "typecheck": "tsc --noEmit",
     "diagnose": "node scripts/diagnose-dev.mjs",
     "diagnose:types": "tsc -p tsconfig.diagnostics.json --noEmit --pretty false",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:cov": "jest --coverage",
-    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
+    "test": "jest && jest --config ./test/jest-integration.json && jest --config ./test/jest-e2e.json",
+    "test:unit": "jest",
+    "test:unit:watch": "jest --watch",
+    "test:int": "jest --config ./test/jest-integration.json",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "test:ci": "jest --ci --coverage --runInBand",
+    "test:cov": "jest --coverage",
+    "test:ci": "jest --ci --coverage --runInBand && jest --config ./test/jest-integration.json --ci && jest --config ./test/jest-e2e.json --ci",
+    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
@@ -124,25 +126,5 @@
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.20.0"
-  },
-  "jest": {
-    "moduleFileExtensions": [
-      "js",
-      "json",
-      "ts"
-    ],
-    "rootDir": "src",
-    "testRegex": ".*\\.spec\\.ts$",
-    "transform": {
-      "^.+\\.(t|j)s$": "ts-jest"
-    },
-    "collectCoverageFrom": [
-      "**/*.(t|j)s"
-    ],
-    "coverageDirectory": "../coverage",
-    "testEnvironment": "node",
-    "moduleNameMapper": {
-      "^@/(.*)$": "<rootDir>/$1"
-    }
   }
 }
