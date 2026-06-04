@@ -20,7 +20,14 @@ export const UsersSeeder: Seeder = {
 
     await prisma.user.upsert({
       where: { username: 'admin' },
-      update: {},
+      update: {
+        employeeId: 'EMP-0000001',
+        email: 'admin@example.com',
+        fullName: 'System Administrator',
+        passwordHash,
+        roleId: adminRole.id,
+        status: 'ACTIVE',
+      },
       create: {
         employeeId: 'EMP-0000001',
         username: 'admin',
@@ -28,6 +35,7 @@ export const UsersSeeder: Seeder = {
         fullName: 'System Administrator',
         passwordHash,
         roleId: adminRole.id,
+        status: 'ACTIVE',
       },
     });
   },

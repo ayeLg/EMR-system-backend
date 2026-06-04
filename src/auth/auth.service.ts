@@ -22,7 +22,7 @@ export class AuthService {
     email: string,
     password: string,
   ): Promise<UserRecord | null> {
-    const user = this.usersService.findByEmail(email);
+    const user = await this.usersService.findByEmail(email);
     if (!user?.isActive) {
       return null;
     }

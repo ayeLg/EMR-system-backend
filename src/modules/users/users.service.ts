@@ -1,31 +1,47 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
-import * as bcrypt from 'bcryptjs';
+import { Injectable } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
 import { Role } from '@/authorization/roles/role.enum';
+import { PrismaService } from '@/prisma/prisma.service';
 import type { User, UserRecord } from './entities/user.entity';
 
+type UserWithRole = Prisma.UserGetPayload<{ include: { role: true } }>;
+
+const ROLE_BY_CODE: Record<string, Role> = {
+  SUPER_ADMIN: Role.SuperAdmin,
+  ADMIN: Role.Admin,
+  DOCTOR: Role.Doctor,
+  NURSE: Role.Nurse,
+  RECEPTIONIST: Role.Receptionist,
+};
+
 @Injectable()
-export class UsersService implements OnModuleInit {
-  private readonly users = new Map<string, UserRecord>();
+export class UsersService {
+  constructor(private readonly prisma: PrismaService) {}
 
-  async onModuleInit(): Promise<void> {
-    if (this.users.size > 0) {
-      return;
-    }
-    await this.seedDemoUsers();
+  async findById(id: string): Promise<UserRecord | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      include: { role: true },
+    });
+    return user ? this.toUserRecord(user) : null;
   }
 
-  findById(id: string): UserRecord | undefined {
-    return this.users.get(id);
+  async findByEmail(email: string): Promise<UserRecord | null> {
+    const user = await this.prisma.user.findFirst({
+      where: {
+        email: { equals: email, mode: 'insensitive' },
+      },
+      include: { role: true },
+    });
+    return user ? this.toUserRecord(user) : null;
   }
 
-  findByEmail(email: string): UserRecord | undefined {
-    return [...this.users.values()].find(
-      (user) => user.email.toLowerCase() === email.toLowerCase(),
-    );
-  }
-
-  findAll(): User[] {
-    return [...this.users.values()].map((user) => this.sanitize(user));
+  async findAll(): Promise<User[]> {
+    const users = await this.prisma.user.findMany({
+      include: { role: true },
+      orderBy: { createdAt: 'desc' },
+    });
+    return users.map((user) => this.sanitize(this.toUserRecord(user)));
   }
 
   sanitize(user: User | UserRecord): User {
@@ -40,50 +56,20 @@ export class UsersService implements OnModuleInit {
     };
   }
 
-  private async seedDemoUsers(): Promise<void> {
-    const passwordHash = await bcrypt.hash('password123', 10);
-    const now = new Date();
-    const seeds: User[] = [
-      {
-        id: '1',
-        email: 'admin@example.com',
-        fullName: 'System Admin',
-        role: Role.SuperAdmin,
-        isActive: true,
-        createdAt: now,
-        updatedAt: now,
-      },
-      {
-        id: '2',
-        email: 'doctor@example.com',
-        fullName: 'Dr. Jane Doe',
-        role: Role.Doctor,
-        isActive: true,
-        createdAt: now,
-        updatedAt: now,
-      },
-      {
-        id: '3',
-        email: 'nurse@example.com',
-        fullName: 'Nurse Sam',
-        role: Role.Nurse,
-        isActive: true,
-        createdAt: now,
-        updatedAt: now,
-      },
-      {
-        id: '4',
-        email: 'reception@example.com',
-        fullName: 'Front Desk',
-        role: Role.Receptionist,
-        isActive: true,
-        createdAt: now,
-        updatedAt: now,
-      },
-    ];
+  private toUserRecord(user: UserWithRole): UserRecord {
+    return {
+      id: user.id,
+      email: user.email,
+      fullName: user.fullName,
+      role: this.toAppRole(user.role.code),
+      isActive: user.status === 'ACTIVE',
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      passwordHash: user.passwordHash,
+    };
+  }
 
-    for (const seed of seeds) {
-      this.users.set(seed.id, { ...seed, passwordHash });
-    }
+  private toAppRole(code: string): Role {
+    return ROLE_BY_CODE[code] ?? (code.toLowerCase() as Role);
   }
 }
