@@ -33,9 +33,13 @@ const config: Config = {
       lines: 12,
     },
     // Safety-critical modules: a patient-safety bug here can cause harm, so
-    // these require near-total coverage. The globs match nothing until the
-    // modules are built; Jest only enforces a glob's threshold when at least
-    // one matching file is collected, so absence is a no-op.
+    // these require near-total (95%) coverage. Adding an untested .ts file to
+    // any of these directories fails `test:cov` — that is the safety gate.
+    //
+    // NOTE: Jest 30 errors ("Coverage data ... was not found") if a path glob
+    // matches zero files, so each directory ships a placeholder `index.ts` +
+    // `index.spec.ts` to keep the glob non-empty until the real module lands.
+    // Remove the placeholder when implementing the module.
     'src/modules/clinical/**/*.ts': {
       branches: 95,
       statements: 95,
