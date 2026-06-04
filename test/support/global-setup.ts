@@ -33,8 +33,15 @@ function ensureContainerRuntime(): void {
 
 /**
  * Jest globalSetup: boot one Postgres container, publish its URI as
- * DATABASE_URL, then apply Prisma migrations. Runs once before the worker
- * (integration runs with maxWorkers: 1, so process.env propagates).
+ * DATABASE_URL, then apply Prisma migrations.
+ *
+ * Env propagation is load-bearing: this runs in the parent process, and Jest
+ * forks test workers AFTER globalSetup, so workers inherit the DATABASE_URL /
+ * test secrets set here as a snapshot at fork time. The integration and e2e
+ * configs pin `maxWorkers: 1` — keep it. Do not re-read or override these env
+ * vars in a per-worker `setupFiles`/`setupFilesAfterEach`, or the snapshot link
+ * breaks. `execSync(..., { stdio: 'inherit' })` throws on a non-zero exit, so a
+ * failed migration fails the run loudly rather than silently.
  */
 export default async function globalSetup(): Promise<void> {
   applyTestEnv();
