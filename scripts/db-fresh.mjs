@@ -32,7 +32,6 @@ run('Reset database schema', 'pnpm', [
   'migrate',
   'reset',
   '--force',
-  '--skip-seed',
 ]);
 run('Seed database', 'pnpm', ['db:seed']);
 run('Check database readiness', 'pnpm', ['db:check']);
