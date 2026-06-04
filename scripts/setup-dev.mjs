@@ -36,7 +36,7 @@ if (!args.has('--skip-db')) {
 console.log('\nDev setup complete. Start the API with: pnpm start:dev');
 
 function checkNodeVersion() {
-  const minimumMajor = 22;
+  const minimumMajor = 24;
   const current = process.versions.node;
   const major = Number.parseInt(current.split('.')[0] ?? '0', 10);
 

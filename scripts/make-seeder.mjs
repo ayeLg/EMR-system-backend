@@ -14,7 +14,9 @@ const seedsDir = join(root, 'prisma', 'seeds');
 
 const raw = process.argv[2];
 if (!raw) {
-  console.error('Usage: pnpm make:seeder <Name>   e.g. pnpm make:seeder Departments');
+  console.error(
+    'Usage: pnpm make:seeder <Name>   e.g. pnpm make:seeder Departments',
+  );
   process.exit(1);
 }
 
@@ -70,7 +72,9 @@ if (seed.includes(exportName)) {
   );
   seed = seed.replace(registryMarker, `${exportName},\n  ${registryMarker}`);
   writeFileSync(seedFile, seed);
-  console.log(`Created prisma/seeds/${fileBase}.ts and registered ${exportName} in prisma/seed.ts`);
+  console.log(
+    `Created prisma/seeds/${fileBase}.ts and registered ${exportName} in prisma/seed.ts`,
+  );
 } else {
   console.log(`Created prisma/seeds/${fileBase}.ts`);
   console.warn('Could not find markers in prisma/seed.ts — register manually:');

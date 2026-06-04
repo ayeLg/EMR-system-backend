@@ -55,4 +55,10 @@ export default async function globalSetup(): Promise<void> {
     stdio: 'inherit',
     env: { ...process.env, DATABASE_URL: url },
   });
+
+  // Seed shared reference data for e2e tests (roles + bootstrap admin user).
+  execSync('pnpm db:seed', {
+    stdio: 'inherit',
+    env: { ...process.env, DATABASE_URL: url },
+  });
 }

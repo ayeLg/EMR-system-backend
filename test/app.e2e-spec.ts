@@ -41,22 +41,35 @@ describe('App (e2e)', () => {
       });
   });
 
-  // SKIP: needs seeded users — see testing-foundation plan Task 8 known gap
-  it.skip('POST /api/auth/login', () => {
+  it('POST /api/auth/login returns a token for the seeded admin', () => {
     return request(app.getHttpServer())
       .post('/api/auth/login')
-      .send({ email: 'doctor@example.com', password: 'password123' })
-      .expect((res) => {
-        expect([200, 201]).toContain(res.status);
-      })
+      .send({ email: 'admin@example.com', password: 'ChangeMe123!' })
+      .expect(201)
       .expect((res) => {
         const body = res.body as {
           success: boolean;
-          data: { accessToken: string; user: { role: string } };
+          data: {
+            accessToken: string;
+            user: { email: string; role: string };
+          };
         };
         expect(body.success).toBe(true);
         expect(body.data.accessToken).toBeDefined();
-        expect(body.data.user.role).toBe('doctor');
+        expect(body.data.user.email).toBe('admin@example.com');
+        expect(body.data.user.role).toBe('super_admin');
+      });
+  });
+
+  it('POST /api/auth/login rejects an invalid password', () => {
+    return request(app.getHttpServer())
+      .post('/api/auth/login')
+      .send({ email: 'admin@example.com', password: 'WrongPass123!' })
+      .expect(401)
+      .expect((res) => {
+        const body = res.body as { success: boolean; message: string };
+        expect(body.success).toBe(false);
+        expect(body.message).toBe('Invalid credentials');
       });
   });
 });

@@ -31,7 +31,9 @@ bind-mount the socket on VM-backed runtimes like Colima); the container is stopp
 - **AAA**: Arrange, Act, Assert — one behavior per test.
 - `it()` names read as specifications: "throws when the patient has an active drug allergy".
 - **No real network, time, or randomness.** Seed faker (`faker.seed(n)`); freeze the clock for time-dependent code.
-- Integration/e2e tests start from a truncated DB (`resetDb`) in `beforeEach`.
+- Integration tests start from a truncated DB (`resetDb`) in `beforeEach`.
+- E2E tests start from migrations plus seeders, so auth tests use the same
+  bootstrap admin as local development.
 - Build data with factories in `test/support/factories/`, never inline literals for full entities.
 
 ## Safety-critical test checklist

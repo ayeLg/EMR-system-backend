@@ -4,7 +4,7 @@
   "roots": ["<rootDir>/src", "<rootDir>/test"],
   "testRegex": ".*\\.int-spec\\.ts$",
   "transform": {
-    "^.+\\.(t|j)s$": "ts-jest"
+    "^.+\\.(t|j)s$": ["ts-jest", { "tsconfig": "<rootDir>/tsconfig.spec.json" }]
   },
   "transformIgnorePatterns": [
     "node_modules/(?!(@faker-js/faker|.pnpm/@faker-js))"

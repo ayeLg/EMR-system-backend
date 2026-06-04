@@ -32,7 +32,7 @@ docker info > /dev/null 2>&1 && echo "ready" || echo "run: colima start"
 
 | Command                | What it runs                                      | Needs Colima? | Speed                     |
 | ---------------------- | ------------------------------------------------- | ------------- | ------------------------- |
-| `pnpm test:unit`       | Pure logic, no DB                                 | No            | Fast (<1s)                |
+| `pnpm test:unit`       | Pure logic, no DB                                 | No            | Fast                      |
 | `pnpm test:int`        | Real Postgres (Prisma, constraints, transactions) | Yes           | First run slow, then fast |
 | `pnpm test:e2e`        | Full app over HTTP                                | Yes           | Medium                    |
 | `pnpm test`            | All three                                         | Yes           | —                         |
@@ -143,7 +143,7 @@ can hurt a patient. Every safety rule needs 4 tests:
 | `test:int` is slow the first time                                     | Normal — it pulls the `postgres:15` image once. Later runs are fast.                       |
 | `Coverage … threshold (95%) not met` in clinical/pharmacy/lab/billing | You added safety code without tests. Add tests until it passes. Do **not** lower the 95%.  |
 | Global coverage threshold fails                                       | The global baseline is intentionally low for now; if you dropped real coverage, add tests. |
-| e2e `login` test is skipped                                           | Known gap — it needs seeded users (coming in the validation/seed work).                    |
+| e2e login fails with `Invalid credentials`                            | Check `UsersSeeder` ran; test setup seeds `admin@example.com` / `ChangeMe123!`.            |
 
 ---
 

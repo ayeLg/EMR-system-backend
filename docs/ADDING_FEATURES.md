@@ -5,8 +5,7 @@ This starter uses **feature modules** (NestJS) with **CASL** policy guards on ro
 ## Quick start
 
 ```bash
-chmod +x scripts/generate-feature.sh
-./scripts/generate-feature.sh appointments Appointment
+pnpm generate:feature appointments Appointment appointment
 ```
 
 Or copy `templates/feature/` manually and replace `__feature__` / `__Feature__` tokens.
@@ -20,7 +19,7 @@ Or copy `templates/feature/` manually and replace `__feature__` / `__Feature__` 
 | 3    | `src/authorization/casl/types/subjects.ts`    | Add a subject string/constant                              |
 | 4    | `src/authorization/roles/role-permissions.ts` | Define `can` rules per `Role`                              |
 | 5    | `src/modules/<feature>/*.controller.ts`       | Add `@CheckPolicies(...)` per route                        |
-| 6    | Service                                       | Swap in-memory `Map` for database repository               |
+| 6    | Service                                       | Use `PrismaService` for persistence and transactions       |
 | 7    | Tests                                         | Unit test service; test abilities via `CaslAbilityFactory` |
 
 ## Authorization pattern
@@ -55,3 +54,15 @@ Use `@Public()` on handlers that skip JWT (e.g. login, health).
 ## Reference implementation
 
 See `src/modules/patients/` as the canonical example feature module.
+
+## Data and seeders
+
+If the feature needs reference data, create a seeder with:
+
+```bash
+pnpm make:seeder <Name>
+```
+
+Register order matters: dependencies such as roles or lookup tables must run
+before seeders that reference them. Keep seeders idempotent with `upsert` so
+`pnpm db:seed` and `pnpm db:fresh` stay safe to rerun.

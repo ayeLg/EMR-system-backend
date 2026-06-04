@@ -25,7 +25,7 @@ Commit messages are checked automatically by **commitlint** (via a husky
 | --------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | `type`    | Required. Lowercase. One of the types below.                                                                                 |
 | `scope`   | Optional. The area touched, e.g. `patients`, `auth`. In parentheses.                                                         |
-| `subject` | Required. Imperative mood ("add", not "added"/"adds"). Lowercase start. **No trailing period.** Keep the header ≤ 100 chars. |
+| `subject` | Required. Imperative mood ("add", not "added"/"adds"). Lowercase start. **No trailing period.** Keep the header ≤ 150 chars. |
 | `body`    | Optional. Explain **what** and **why** (not how). Wrap lines ≤ 100 chars.                                                    |
 | `footer`  | Optional. `BREAKING CHANGE: ...` and issue refs like `Refs #123`.                                                            |
 

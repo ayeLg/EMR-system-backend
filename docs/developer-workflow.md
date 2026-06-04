@@ -13,7 +13,19 @@ nvm use
 
 The project also has `.node-version` for tools such as fnm, mise, and asdf.
 `pnpm install` runs `scripts/check-node-version.mjs` and fails fast on Node
-versions below 22.
+versions below 24.
+
+## Package manager
+
+Use pnpm only:
+
+```bash
+pnpm install
+```
+
+`npm install` is intentionally blocked by the preinstall guard. The repo is
+locked by `pnpm-lock.yaml`, and npm can crash or produce a conflicting install
+tree when pointed at pnpm's `node_modules/.pnpm` layout.
 
 ## One-command setup
 
@@ -54,6 +66,19 @@ pnpm db:fresh --yes  # same, without confirmation prompt
 
 `db:fresh` refuses to run when `NODE_ENV=production` unless explicitly passed
 `--allow-production`.
+
+## Seed data
+
+Seeders live in `prisma/seeds/` and are registered in `prisma/seed.ts`.
+
+- `RolesSeeder` creates RBAC roles.
+- `UsersSeeder` creates the development bootstrap admin:
+  `admin@example.com` / `ChangeMe123!`.
+- Seeders must stay idempotent by using `upsert`, so re-running
+  `pnpm db:seed` is safe.
+
+The bootstrap password is development-only. Use environment-specific secrets or
+an explicit credential rotation step before real deployments.
 
 ## API contract export
 
@@ -123,3 +148,21 @@ Generated services use `PrismaService`, Zod DTOs, pagination defaults, CASL
 policy helpers, and a placeholder `buildSearchWhere()` method. After
 generation, replace placeholder DTO fields and search logic with model-specific
 fields.
+
+## Local verification
+
+Before opening a PR, run:
+
+```bash
+pnpm verify
+```
+
+For the full local gate, including Testcontainers-backed database tests:
+
+```bash
+pnpm verify:full
+```
+
+CI runs the same core checks on pushes to `main` and on pull requests:
+Prisma generation, TypeScript, ESLint, unit tests, integration tests, and e2e
+tests.
