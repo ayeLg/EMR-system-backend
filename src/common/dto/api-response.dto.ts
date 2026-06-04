@@ -1,4 +1,8 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  ApiHideProperty,
+  ApiProperty,
+  ApiPropertyOptional,
+} from '@nestjs/swagger';
 
 export class PaginationMetaDto {
   @ApiProperty({ example: 1 })
@@ -24,6 +28,7 @@ export class ApiResponseDto<T> {
   @ApiProperty({ example: true })
   success!: boolean;
 
+  @ApiHideProperty()
   data!: T;
 
   @ApiPropertyOptional({ type: PaginationMetaDto })
