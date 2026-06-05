@@ -1,4 +1,5 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { UsersService } from '@/modules/users/users.service';
@@ -11,11 +12,17 @@ export interface JwtPayload {
   role: string;
 }
 
+interface RefreshJwtPayload {
+  sub: string;
+  type: 'refresh';
+}
+
 @Injectable()
 export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
+    private readonly config: ConfigService,
   ) {}
 
   async validateUser(
@@ -41,6 +48,28 @@ export class AuthService {
     return this.buildAuthResponse(user);
   }
 
+  async refresh(refreshToken: string) {
+    let payload: RefreshJwtPayload;
+    try {
+      payload = this.jwtService.verify<RefreshJwtPayload>(refreshToken, {
+        secret: this.config.getOrThrow<string>('jwt.refreshSecret'),
+      });
+    } catch {
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
+
+    if (payload.type !== 'refresh') {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    const user = await this.usersService.findById(payload.sub);
+    if (!user?.isActive) {
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
+
+    return this.buildAuthResponse(this.usersService.sanitize(user));
+  }
+
   buildAuthResponse(user: User) {
     const payload: JwtPayload = {
       sub: user.id,
@@ -48,9 +77,22 @@ export class AuthService {
       role: user.role,
     };
     const accessToken = this.jwtService.sign(payload);
+    const refreshToken = this.signRefreshToken(user.id);
     return {
       accessToken,
+      refreshToken,
       user: this.usersService.sanitize(user),
     };
+  }
+
+  private signRefreshToken(userId: string): string {
+    return this.jwtService.sign(
+      { sub: userId, type: 'refresh' } satisfies RefreshJwtPayload,
+      {
+        secret: this.config.getOrThrow<string>('jwt.refreshSecret'),
+        expiresIn: (this.config.get<string>('jwt.refreshExpiresIn') ??
+          '7d') as `${number}d`,
+      },
+    );
   }
 }

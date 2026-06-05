@@ -8,6 +8,12 @@ export class AuthResponseDto {
   })
   accessToken!: string;
 
+  @ApiProperty({
+    description: 'JWT refresh token (long-lived)',
+    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXJ9...',
+  })
+  refreshToken!: string;
+
   @ApiProperty({ type: UserResponseDto })
   user!: UserResponseDto;
 }

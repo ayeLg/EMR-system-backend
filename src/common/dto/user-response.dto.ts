@@ -14,6 +14,15 @@ export class UserResponseDto {
   @ApiProperty({ enum: Role, example: Role.Doctor })
   role!: Role;
 
+  @ApiProperty({ example: 'DOCTOR', description: 'Database role code' })
+  roleCode!: string;
+
+  @ApiProperty({
+    example: ['patient:read', 'patient:create'],
+    description: 'Permission keys for UI RBAC',
+  })
+  permissions!: string[];
+
   @ApiProperty({ example: true })
   isActive!: boolean;
 

@@ -56,9 +56,33 @@ describe('App (e2e)', () => {
         };
         expect(body.success).toBe(true);
         expect(body.data.accessToken).toBeDefined();
+        expect(body.data.refreshToken).toBeDefined();
         expect(body.data.user.email).toBe('admin@example.com');
         expect(body.data.user.role).toBe('super_admin');
       });
+  });
+
+  it('POST /api/auth/refresh issues a new access token', async () => {
+    const loginRes = await request(app.getHttpServer())
+      .post('/api/auth/login')
+      .send({ email: 'admin@example.com', password: 'ChangeMe123!' })
+      .expect(201);
+
+    const loginBody = loginRes.body as {
+      data: { accessToken: string; refreshToken: string };
+    };
+
+    const refreshRes = await request(app.getHttpServer())
+      .post('/api/auth/refresh')
+      .send({ refreshToken: loginBody.data.refreshToken })
+      .expect(201);
+
+    const refreshBody = refreshRes.body as {
+      data: { accessToken: string; refreshToken: string };
+    };
+    expect(refreshBody.data.accessToken).toBeDefined();
+    expect(refreshBody.data.refreshToken).toBeDefined();
+    expect(refreshBody.data.accessToken).not.toBe(loginBody.data.accessToken);
   });
 
   it('POST /api/auth/login rejects an invalid password', () => {

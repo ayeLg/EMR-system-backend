@@ -11,6 +11,8 @@ import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { PoliciesGuard } from '@/common/guards/policies.guard';
 import { AuthModule } from '@/auth/auth.module';
 import { HealthModule } from '@/modules/health/health.module';
+import { MasterDataModule } from '@/modules/master-data/master-data.module';
+import { RbacModule } from '@/modules/rbac/rbac.module';
 import { PatientsModule } from '@/modules/patients/patients.module';
 import { UsersModule } from '@/modules/users/users.module';
 
@@ -40,6 +42,8 @@ import { UsersModule } from '@/modules/users/users.module';
     AuthModule,
     HealthModule,
     PatientsModule,
+    MasterDataModule,
+    RbacModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

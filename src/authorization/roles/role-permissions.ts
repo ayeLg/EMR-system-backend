@@ -1,6 +1,7 @@
 import { Action } from '@/authorization/casl/types';
 import {
   AppSubjects,
+  MASTER_DATA_SUBJECT,
   PATIENT_SUBJECT,
   USER_SUBJECT,
 } from '@/authorization/casl/types/subjects';
@@ -12,11 +13,12 @@ export interface RoleRule {
   inverted?: boolean;
 }
 
-export const ROLE_PERMISSIONS: Record<Role, RoleRule[]> = {
+export const ROLE_PERMISSIONS: Partial<Record<Role, RoleRule[]>> = {
   [Role.SuperAdmin]: [],
   [Role.Admin]: [
     { action: Action.Manage, subject: USER_SUBJECT },
     { action: Action.Manage, subject: PATIENT_SUBJECT },
+    { action: Action.Manage, subject: MASTER_DATA_SUBJECT },
   ],
   [Role.Doctor]: [
     { action: Action.Read, subject: PATIENT_SUBJECT },

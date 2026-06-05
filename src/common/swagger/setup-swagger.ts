@@ -29,6 +29,8 @@ export function createOpenApiDocument(app: INestApplication): OpenAPIObject {
     .addTag('health', 'Service health checks')
     .addTag('auth', 'Authentication')
     .addTag('patients', 'Patient records')
+    .addTag('master-data', 'Reference catalogs (departments, services, etc.)')
+    .addTag('rbac', 'Roles and permissions')
     .build();
 
   return cleanupOpenApiDoc(SwaggerModule.createDocument(app, config));

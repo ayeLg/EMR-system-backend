@@ -12,12 +12,16 @@ import { prisma } from './client';
 import { Seeder } from './seeds/seeder';
 // <seeder-imports> — do not remove this marker (used by make:seeder)
 import { RolesSeeder } from './seeds/roles.seeder';
+import { PermissionsSeeder } from './seeds/permissions.seeder';
+import { RolePermissionsSeeder } from './seeds/role-permissions.seeder';
 import { UsersSeeder } from './seeds/users.seeder';
 // </seeder-imports>
 
 // Order matters: list dependencies before dependents.
 const seeders: Seeder[] = [
   RolesSeeder,
+  PermissionsSeeder,
+  RolePermissionsSeeder,
   UsersSeeder,
   // <seeder-registry> — do not remove this marker (used by make:seeder)
 ];
