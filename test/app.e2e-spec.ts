@@ -51,6 +51,7 @@ describe('App (e2e)', () => {
           success: boolean;
           data: {
             accessToken: string;
+            refreshToken: string;
             user: { email: string; role: string };
           };
         };

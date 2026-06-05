@@ -35,6 +35,8 @@ import {
   updatePatientPolicy,
 } from './policies/patient.policies';
 import { PatientsService } from './patients.service';
+import { CurrentUser } from '@/common/decorators/current-user.decorator';
+import type { User } from '@/modules/users/entities/user.entity';
 
 @ApiTags('patients')
 @ApiBearerAuth(SWAGGER_BEARER_AUTH)
@@ -48,7 +50,7 @@ export class PatientsController {
   @Get()
   @ApiOperation({ summary: 'List all patients' })
   @ApiOkResponseData(PatientResponseDto, { isArray: true })
-  findAll(): PatientResponseDto[] {
+  findAll(): Promise<PatientResponseDto[]> {
     return this.patientsService.findAll();
   }
 
@@ -58,7 +60,7 @@ export class PatientsController {
   @ApiParam({ name: 'id', example: 'p1' })
   @ApiOkResponseData(PatientResponseDto)
   @ApiNotFoundResponse()
-  findOne(@Param('id') id: string): PatientResponseDto {
+  findOne(@Param('id') id: string): Promise<PatientResponseDto> {
     return this.patientsService.findOne(id);
   }
 
@@ -66,8 +68,11 @@ export class PatientsController {
   @Post()
   @ApiOperation({ summary: 'Create a patient' })
   @ApiCreatedResponseData(PatientResponseDto)
-  create(@Body() dto: CreatePatientDto): PatientResponseDto {
-    return this.patientsService.create(dto);
+  create(
+    @Body() dto: CreatePatientDto,
+    @CurrentUser() user: User,
+  ): Promise<PatientResponseDto> {
+    return this.patientsService.create(dto, user.id);
   }
 
   @CheckPolicies(updatePatientPolicy())
@@ -79,7 +84,7 @@ export class PatientsController {
   update(
     @Param('id') id: string,
     @Body() dto: UpdatePatientDto,
-  ): PatientResponseDto {
+  ): Promise<PatientResponseDto> {
     return this.patientsService.update(id, dto);
   }
 

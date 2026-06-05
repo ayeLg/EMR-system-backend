@@ -1,68 +1,90 @@
-import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
-import { randomUUID } from 'crypto';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { PatientResponseDto } from './dto/patient-response.dto';
 import { CreatePatientDto } from './dto/create-patient.dto';
 import { UpdatePatientDto } from './dto/update-patient.dto';
-import type { Patient } from './entities/patient.entity';
+import { PrismaService } from '@/prisma/prisma.service';
 
 @Injectable()
-export class PatientsService implements OnModuleInit {
-  private readonly patients = new Map<string, Patient>();
+export class PatientsService {
+  constructor(private readonly prisma: PrismaService) {}
 
-  onModuleInit(): void {
-    if (this.patients.size > 0) {
-      return;
-    }
-    const now = new Date();
-    this.patients.set('p1', {
-      id: 'p1',
-      mrn: 'MRN-001',
-      firstName: 'John',
-      lastName: 'Smith',
-      dateOfBirth: '1985-03-15',
-      assignedDoctorId: '2',
-      createdAt: now,
-      updatedAt: now,
+  async findAll(): Promise<PatientResponseDto[]> {
+    const patients = await this.prisma.patient.findMany({
+      where: { isActive: true },
+      orderBy: { createdAt: 'desc' },
     });
+    return patients.map((patient) => this.toResponse(patient));
   }
 
-  findAll(): Patient[] {
-    return [...this.patients.values()];
-  }
-
-  findOne(id: string): Patient {
-    const patient = this.patients.get(id);
+  async findOne(id: string): Promise<PatientResponseDto> {
+    const patient = await this.prisma.patient.findUnique({
+      where: { id },
+      include: {
+        allergies: true,
+        encounters: {
+          orderBy: { startTime: 'desc' },
+          take: 5,
+        },
+      },
+    });
     if (!patient) {
       throw new NotFoundException(`Patient ${id} not found`);
     }
-    return patient;
+    return this.toResponse(patient);
   }
 
-  create(dto: CreatePatientDto): Patient {
-    const now = new Date();
-    const patient: Patient = {
-      id: randomUUID(),
-      ...dto,
-      createdAt: now,
-      updatedAt: now,
+  async create(
+    dto: CreatePatientDto,
+    registeredById: string,
+  ): Promise<PatientResponseDto> {
+    const patient = await this.prisma.patient.create({
+      data: {
+        ...dto,
+        dateOfBirth: new Date(dto.dateOfBirth),
+        registeredById,
+      },
+    });
+    return this.toResponse(patient);
+  }
+
+  async update(id: string, dto: UpdatePatientDto): Promise<PatientResponseDto> {
+    await this.findOne(id);
+    const patient = await this.prisma.patient.update({
+      where: { id },
+      data: {
+        ...dto,
+        dateOfBirth: dto.dateOfBirth ? new Date(dto.dateOfBirth) : undefined,
+      },
+    });
+    return this.toResponse(patient);
+  }
+
+  async remove(id: string): Promise<void> {
+    await this.findOne(id);
+
+    await this.prisma.patient.update({
+      where: { id },
+      data: { isActive: false },
+    });
+  }
+
+  private toResponse(patient: {
+    id: string;
+    mrn: string;
+    firstName: string;
+    lastName: string;
+    dateOfBirth: Date;
+    createdAt: Date;
+    updatedAt: Date;
+  }): PatientResponseDto {
+    return {
+      id: patient.id,
+      mrn: patient.mrn,
+      firstName: patient.firstName,
+      lastName: patient.lastName,
+      dateOfBirth: patient.dateOfBirth.toISOString().slice(0, 10),
+      createdAt: patient.createdAt,
+      updatedAt: patient.updatedAt,
     };
-    this.patients.set(patient.id, patient);
-    return patient;
-  }
-
-  update(id: string, dto: UpdatePatientDto): Patient {
-    const existing = this.findOne(id);
-    const updated: Patient = {
-      ...existing,
-      ...dto,
-      updatedAt: new Date(),
-    };
-    this.patients.set(id, updated);
-    return updated;
-  }
-
-  remove(id: string): void {
-    if (!this.patients.delete(id)) {
-      throw new NotFoundException(`Patient ${id} not found`);
-    }
   }
 }
