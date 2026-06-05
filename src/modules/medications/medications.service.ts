@@ -1,47 +1,25 @@
 import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
+import { seedIfEmpty } from '@/common/catalog/seed-if-empty';
 import type {
   CreateMedicationDto,
   UpdateMedicationDto,
-} from './dto/master-data.dto';
+} from './dto/medication.dto';
+import { MEDICATION_SEEDS } from './medications.seed';
 
 @Injectable()
 export class MedicationsService implements OnModuleInit {
   constructor(private readonly prisma: PrismaService) {}
 
   async onModuleInit(): Promise<void> {
-    const count = await this.prisma.medication.count();
-    if (count > 0) return;
-
-    await this.prisma.medication.createMany({
-      data: [
-        {
-          code: 'MED-PARA',
-          genericName: 'Paracetamol',
-          category: 'Analgesic',
-          dosageForm: 'Tablet',
-          strength: '500mg',
-          unit: 'tablet',
-        },
-        {
-          code: 'MED-AMLO',
-          genericName: 'Amlodipine',
-          category: 'Cardiovascular',
-          dosageForm: 'Tablet',
-          strength: '5mg',
-          unit: 'tablet',
-        },
-        {
-          code: 'MED-AMOX',
-          genericName: 'Amoxicillin',
-          category: 'Antibiotic',
-          dosageForm: 'Capsule',
-          strength: '250mg',
-          unit: 'capsule',
-        },
-      ],
-      skipDuplicates: true,
-    });
+    await seedIfEmpty(
+      () => this.prisma.medication.count(),
+      () =>
+        this.prisma.medication.createMany({
+          data: [...MEDICATION_SEEDS],
+          skipDuplicates: true,
+        }),
+    );
   }
 
   findAll() {

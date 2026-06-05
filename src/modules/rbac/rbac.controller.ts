@@ -14,7 +14,7 @@ import { CheckPolicies } from '@/common/decorators/check-policies.decorator';
 import { ApiOkResponseData } from '@/common/swagger/api-response.decorator';
 import { SWAGGER_BEARER_AUTH } from '@/common/swagger/setup-swagger';
 import { RbacService } from '@/authorization/rbac/rbac.service';
-import { manageMasterDataPolicy } from '@/modules/master-data/policies/master-data.policies';
+import { manageMasterDataPolicy } from '@/authorization/policies/master-data.policies';
 import {
   PermissionResponseDto,
   RoleWithPermissionsResponseDto,

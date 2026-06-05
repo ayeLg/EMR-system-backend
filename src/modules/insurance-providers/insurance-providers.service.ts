@@ -3,16 +3,11 @@ import { randomUUID } from 'crypto';
 import type {
   CreateInsuranceProviderDto,
   UpdateInsuranceProviderDto,
-} from './dto/master-data.dto';
+} from './dto/insurance-provider.dto';
+import type { InsuranceProviderRecord } from './entities/insurance-provider.entity';
+import { INSURANCE_PROVIDER_SEEDS } from './insurance-providers.seed';
 
-export interface InsuranceProviderRecord {
-  id: string;
-  code: string;
-  name: string;
-  contact?: string | null;
-  isActive: boolean;
-}
-
+/** In-memory catalog until a Prisma model is added. */
 @Injectable()
 export class InsuranceProvidersService implements OnModuleInit {
   private readonly providers = new Map<string, InsuranceProviderRecord>();
@@ -20,23 +15,7 @@ export class InsuranceProvidersService implements OnModuleInit {
   onModuleInit(): void {
     if (this.providers.size > 0) return;
 
-    const seeds: Omit<InsuranceProviderRecord, 'id'>[] = [
-      { code: 'AYA', name: 'AYA SOMPO', contact: '01-555111', isActive: true },
-      {
-        code: 'GGI',
-        name: 'Grand Guardian',
-        contact: '01-555222',
-        isActive: true,
-      },
-      {
-        code: 'IKBZ',
-        name: 'IKBZ Insurance',
-        contact: '01-555333',
-        isActive: true,
-      },
-    ];
-
-    for (const seed of seeds) {
+    for (const seed of INSURANCE_PROVIDER_SEEDS) {
       const id = randomUUID();
       this.providers.set(id, { id, ...seed });
     }

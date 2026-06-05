@@ -29,7 +29,12 @@ export function createOpenApiDocument(app: INestApplication): OpenAPIObject {
     .addTag('health', 'Service health checks')
     .addTag('auth', 'Authentication')
     .addTag('patients', 'Patient records')
-    .addTag('master-data', 'Reference catalogs (departments, services, etc.)')
+    .addTag('departments', 'Hospital departments')
+    .addTag('services', 'Billable services catalog')
+    .addTag('medications', 'Medication catalog')
+    .addTag('lab-tests', 'Laboratory test catalog')
+    .addTag('wards', 'Inpatient wards')
+    .addTag('insurance-providers', 'Insurance providers')
     .addTag('rbac', 'Roles and permissions')
     .build();
 
