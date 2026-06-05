@@ -94,8 +94,8 @@ export class PatientsController {
   @ApiParam({ name: 'id', example: 'p1' })
   @ApiOkResponseData(DeletePatientResponseDto)
   @ApiNotFoundResponse()
-  remove(@Param('id') id: string): DeletePatientResponseDto {
-    this.patientsService.remove(id);
+  async remove(@Param('id') id: string): Promise<DeletePatientResponseDto> {
+    await this.patientsService.remove(id);
     return { deleted: true };
   }
 }
