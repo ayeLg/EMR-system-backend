@@ -38,7 +38,7 @@ import { InsuranceProvidersService } from './insurance-providers.service';
 @ApiBearerAuth(SWAGGER_BEARER_AUTH)
 @ApiUnauthorizedResponse({ description: 'Missing or invalid JWT' })
 @ApiForbiddenResponse({ description: 'Insufficient CASL permissions' })
-@Controller('insurance-providers')
+@Controller('master-data/insurance-providers')
 export class InsuranceProvidersController {
   constructor(private readonly insuranceProviders: InsuranceProvidersService) {}
 

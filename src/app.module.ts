@@ -11,15 +11,10 @@ import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { PoliciesGuard } from '@/common/guards/policies.guard';
 import { AuthModule } from '@/auth/auth.module';
 import { HealthModule } from '@/modules/health/health.module';
-import { DepartmentsModule } from '@/modules/departments/departments.module';
-import { InsuranceProvidersModule } from '@/modules/insurance-providers/insurance-providers.module';
-import { LabTestsModule } from '@/modules/lab-tests/lab-tests.module';
-import { MedicationsModule } from '@/modules/medications/medications.module';
+import { MasterDataModule } from '@/modules/master-data/master-data.module';
 import { RbacModule } from '@/modules/rbac/rbac.module';
 import { PatientsModule } from '@/modules/patients/patients.module';
-import { ServicesCatalogModule } from '@/modules/services-catalog/services-catalog.module';
 import { UsersModule } from '@/modules/users/users.module';
-import { WardsModule } from '@/modules/wards/wards.module';
 
 @Module({
   imports: [
@@ -47,12 +42,7 @@ import { WardsModule } from '@/modules/wards/wards.module';
     AuthModule,
     HealthModule,
     PatientsModule,
-    DepartmentsModule,
-    ServicesCatalogModule,
-    MedicationsModule,
-    LabTestsModule,
-    WardsModule,
-    InsuranceProvidersModule,
+    MasterDataModule,
     RbacModule,
   ],
   providers: [

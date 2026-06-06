@@ -35,7 +35,7 @@ import { LabTestsService } from './lab-tests.service';
 @ApiBearerAuth(SWAGGER_BEARER_AUTH)
 @ApiUnauthorizedResponse({ description: 'Missing or invalid JWT' })
 @ApiForbiddenResponse({ description: 'Insufficient CASL permissions' })
-@Controller('lab-tests')
+@Controller('master-data/lab-tests')
 export class LabTestsController {
   constructor(private readonly labTests: LabTestsService) {}
 

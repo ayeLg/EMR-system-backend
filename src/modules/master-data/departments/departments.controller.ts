@@ -40,7 +40,7 @@ import { DepartmentResponseDto } from './dto/department-response.dto';
 @ApiBearerAuth(SWAGGER_BEARER_AUTH)
 @ApiUnauthorizedResponse({ description: 'Missing or invalid JWT' })
 @ApiForbiddenResponse({ description: 'Insufficient CASL permissions' })
-@Controller('departments')
+@Controller('master-data/departments')
 export class DepartmentsController {
   constructor(private readonly departments: DepartmentsService) {}
 

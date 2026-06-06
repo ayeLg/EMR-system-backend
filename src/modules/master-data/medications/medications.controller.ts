@@ -27,51 +27,51 @@ import {
   readMasterDataPolicy,
 } from '@/authorization/policies/master-data.policies';
 import { DeleteMasterDataResponseDto } from '@/common/catalog/delete-response.dto';
-import { CreateServiceDto, UpdateServiceDto } from './dto/service.dto';
-import { ServiceResponseDto } from './dto/service-response.dto';
-import { ServicesCatalogService } from './services-catalog.service';
+import { CreateMedicationDto, UpdateMedicationDto } from './dto/medication.dto';
+import { MedicationResponseDto } from './dto/medication-response.dto';
+import { MedicationsService } from './medications.service';
 
-@ApiTags('services')
+@ApiTags('medications')
 @ApiBearerAuth(SWAGGER_BEARER_AUTH)
 @ApiUnauthorizedResponse({ description: 'Missing or invalid JWT' })
 @ApiForbiddenResponse({ description: 'Insufficient CASL permissions' })
-@Controller('services')
-export class ServicesCatalogController {
-  constructor(private readonly services: ServicesCatalogService) {}
+@Controller('master-data/medications')
+export class MedicationsController {
+  constructor(private readonly medications: MedicationsService) {}
 
   @CheckPolicies(readMasterDataPolicy())
   @Get()
-  @ApiOperation({ summary: 'List billable services' })
-  @ApiOkResponseData(ServiceResponseDto, { isArray: true })
-  listServices() {
-    return this.services.findAll();
+  @ApiOperation({ summary: 'List medications' })
+  @ApiOkResponseData(MedicationResponseDto, { isArray: true })
+  listMedications() {
+    return this.medications.findAll();
   }
 
   @CheckPolicies(manageMasterDataPolicy())
   @Post()
-  @ApiOperation({ summary: 'Create service' })
-  @ApiCreatedResponseData(ServiceResponseDto)
-  createService(@Body() dto: CreateServiceDto) {
-    return this.services.create(dto);
+  @ApiOperation({ summary: 'Create medication' })
+  @ApiCreatedResponseData(MedicationResponseDto)
+  createMedication(@Body() dto: CreateMedicationDto) {
+    return this.medications.create(dto);
   }
 
   @CheckPolicies(manageMasterDataPolicy())
   @Patch(':id')
-  @ApiOperation({ summary: 'Update service' })
+  @ApiOperation({ summary: 'Update medication' })
   @ApiParam({ name: 'id', format: 'uuid' })
-  @ApiOkResponseData(ServiceResponseDto)
+  @ApiOkResponseData(MedicationResponseDto)
   @ApiNotFoundResponse()
-  updateService(@Param('id') id: string, @Body() dto: UpdateServiceDto) {
-    return this.services.update(id, dto);
+  updateMedication(@Param('id') id: string, @Body() dto: UpdateMedicationDto) {
+    return this.medications.update(id, dto);
   }
 
   @CheckPolicies(manageMasterDataPolicy())
   @Delete(':id')
-  @ApiOperation({ summary: 'Delete service' })
+  @ApiOperation({ summary: 'Delete medication' })
   @ApiParam({ name: 'id', format: 'uuid' })
   @ApiOkResponseData(DeleteMasterDataResponseDto)
   @ApiNotFoundResponse()
-  removeService(@Param('id') id: string) {
-    return this.services.remove(id);
+  removeMedication(@Param('id') id: string) {
+    return this.medications.remove(id);
   }
 }

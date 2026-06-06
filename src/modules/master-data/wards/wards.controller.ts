@@ -35,7 +35,7 @@ import { WardsService } from './wards.service';
 @ApiBearerAuth(SWAGGER_BEARER_AUTH)
 @ApiUnauthorizedResponse({ description: 'Missing or invalid JWT' })
 @ApiForbiddenResponse({ description: 'Insufficient CASL permissions' })
-@Controller('wards')
+@Controller('master-data/wards')
 export class WardsController {
   constructor(private readonly wards: WardsService) {}
 

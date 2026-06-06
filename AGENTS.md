@@ -39,6 +39,14 @@ src/
   modules/
     health/              # Public health check
     patients/            # Example feature (reference implementation)
+    master-data/         # Reference catalogs (matches frontend /master-data)
+      master-data.module.ts
+      departments/       # GET/POST /api/master-data/departments
+      services-catalog/
+      medications/
+      lab-tests/
+      wards/
+      insurance-providers/
     users/               # User shape + in-memory store
   common/                # Guards, decorators, metadata keys
   config/                # Env config + validation
@@ -270,6 +278,8 @@ database server" errors. The password in `DATABASE_URL` is masked in output.
 
 - [docs/developer-workflow.md](docs/developer-workflow.md) — local setup,
   database helpers, feature generation, and OpenAPI export.
+
+- [../docs/agent-guides/refactor-module-by-module/](../docs/agent-guides/refactor-module-by-module/README.md) — one-module-at-a-time refactor (any AI tool)
 
 - [docs/ADDING_FEATURES.md](docs/ADDING_FEATURES.md)
 - [templates/feature/README.md](templates/feature/README.md)
