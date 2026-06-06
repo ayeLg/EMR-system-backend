@@ -12,6 +12,7 @@ describe('PatientsService (unit)', () => {
       create: jest.Mock;
       update: jest.Mock;
     };
+    $queryRaw: jest.Mock;
   };
 
   const now = new Date('2026-06-05T00:00:00.000Z');
@@ -45,12 +46,12 @@ describe('PatientsService (unit)', () => {
         create: jest.fn(),
         update: jest.fn(),
       },
+      $queryRaw: jest.fn(),
     };
     service = new PatientsService(prisma as unknown as PrismaService);
   });
 
   const validDto = (): CreatePatientDto => ({
-    mrn: 'MRN-0100043',
     firstName: 'Aung',
     lastName: 'Min',
     dateOfBirth: '1990-01-01',
@@ -75,6 +76,10 @@ describe('PatientsService (unit)', () => {
       expect.objectContaining({
         id: 'p1',
         dateOfBirth: '1990-01-01',
+        gender: 'MALE',
+        bloodType: 'UNKNOWN',
+        primaryPhone: '09123456789',
+        isActive: true,
       }),
     ]);
     expect(prisma.patient.findMany).toHaveBeenCalledWith({
@@ -83,7 +88,51 @@ describe('PatientsService (unit)', () => {
     });
   });
 
-  it('create() stores the patient with registeredById', async () => {
+  it('findOne() maps allergies and recent encounters into the detail shape', async () => {
+    prisma.patient.findUnique.mockResolvedValue({
+      ...patientRow,
+      allergies: [
+        {
+          id: 'a1',
+          allergenType: 'DRUG',
+          allergenName: 'Penicillin',
+          severity: 'SEVERE',
+          reaction: 'Anaphylaxis',
+        },
+      ],
+      encounters: [
+        {
+          id: 'e1',
+          encounterNo: 'ENC-0200102',
+          encounterType: 'OPD',
+          status: 'COMPLETED',
+          startTime: new Date('2026-05-20T08:00:00.000Z'),
+          attendingDoctor: { fullName: 'Dr. Hla Hla' },
+        },
+      ],
+    });
+
+    const detail = await service.findOne('p1');
+
+    expect(detail.allergies).toEqual([
+      expect.objectContaining({
+        allergenName: 'Penicillin',
+        severity: 'SEVERE',
+      }),
+    ]);
+    expect(detail.recentEncounters).toEqual([
+      expect.objectContaining({
+        encounterNo: 'ENC-0200102',
+        date: '2026-05-20',
+        type: 'OPD',
+        doctor: 'Dr. Hla Hla',
+        status: 'COMPLETED',
+      }),
+    ]);
+  });
+
+  it('create() auto-generates a 7-digit MRN and stores registeredById', async () => {
+    prisma.$queryRaw.mockResolvedValue([{ nextval: 43n }]);
     prisma.patient.create.mockResolvedValue(patientRow);
 
     const created = await service.create(validDto(), 'user-1');
@@ -92,6 +141,7 @@ describe('PatientsService (unit)', () => {
     expect(prisma.patient.create).toHaveBeenCalledWith({
       data: {
         ...validDto(),
+        mrn: 'MRN-0000043',
         dateOfBirth: new Date('1990-01-01'),
         registeredById: 'user-1',
       },
@@ -99,7 +149,7 @@ describe('PatientsService (unit)', () => {
   });
 
   it('update() changes fields and bumps updatedAt', async () => {
-    prisma.patient.findUnique.mockResolvedValue(patientRow);
+    prisma.patient.findUnique.mockResolvedValue({ id: 'p1' });
     prisma.patient.update.mockResolvedValue({
       ...patientRow,
       lastName: 'Khaing',
@@ -123,7 +173,7 @@ describe('PatientsService (unit)', () => {
   });
 
   it('remove() soft deletes an existing patient', async () => {
-    prisma.patient.findUnique.mockResolvedValue(patientRow);
+    prisma.patient.findUnique.mockResolvedValue({ id: 'p1' });
     prisma.patient.update.mockResolvedValue({
       ...patientRow,
       isActive: false,

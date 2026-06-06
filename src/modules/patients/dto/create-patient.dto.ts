@@ -2,7 +2,7 @@ import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
 export const CreatePatientSchema = z.object({
-  mrn: z.string().min(1).max(20).meta({ example: 'MRN-002' }),
+  // MRN is auto-generated server-side (`MRN-` + 7-digit sequence), never client-supplied.
   firstName: z.string().min(1).max(100).meta({ example: 'Jane' }),
   lastName: z.string().min(1).max(100).meta({ example: 'Doe' }),
   dateOfBirth: z.iso.date().meta({ example: '1990-01-01' }),

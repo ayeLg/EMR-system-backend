@@ -25,6 +25,7 @@ import { SWAGGER_BEARER_AUTH } from '@/common/swagger/setup-swagger';
 import { CreatePatientDto } from './dto/create-patient.dto';
 import {
   DeletePatientResponseDto,
+  PatientDetailResponseDto,
   PatientResponseDto,
 } from './dto/patient-response.dto';
 import { UpdatePatientDto } from './dto/update-patient.dto';
@@ -58,9 +59,9 @@ export class PatientsController {
   @Get(':id')
   @ApiOperation({ summary: 'Get patient by ID' })
   @ApiParam({ name: 'id', example: 'p1' })
-  @ApiOkResponseData(PatientResponseDto)
+  @ApiOkResponseData(PatientDetailResponseDto)
   @ApiNotFoundResponse()
-  findOne(@Param('id') id: string): Promise<PatientResponseDto> {
+  findOne(@Param('id') id: string): Promise<PatientDetailResponseDto> {
     return this.patientsService.findOne(id);
   }
 
