@@ -53,3 +53,8 @@ export class RoleWithPermissionsResponseDto {
   @ApiProperty({ type: [RolePermissionItemDto] })
   permissions!: RolePermissionItemDto[];
 }
+
+export class DeleteRoleResponseDto {
+  @ApiProperty({ example: true })
+  deleted!: boolean;
+}

@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Param, Put } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Put,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiForbiddenResponse,
@@ -11,11 +20,16 @@ import {
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 import { CheckPolicies } from '@/common/decorators/check-policies.decorator';
-import { ApiOkResponseData } from '@/common/swagger/api-response.decorator';
+import {
+  ApiCreatedResponseData,
+  ApiOkResponseData,
+} from '@/common/swagger/api-response.decorator';
 import { SWAGGER_BEARER_AUTH } from '@/common/swagger/setup-swagger';
 import { RbacService } from '@/authorization/rbac/rbac.service';
 import { manageMasterDataPolicy } from '@/authorization/policies/master-data.policies';
+import { CreateRoleDto, UpdateRoleDto } from './dto/rbac.dto';
 import {
+  DeleteRoleResponseDto,
   PermissionResponseDto,
   RoleWithPermissionsResponseDto,
 } from './dto/rbac-response.dto';
@@ -48,6 +62,34 @@ export class RbacController {
   @ApiOkResponseData(RoleWithPermissionsResponseDto, { isArray: true })
   listRoles() {
     return this.rbac.listRolesWithPermissions();
+  }
+
+  @CheckPolicies(manageMasterDataPolicy())
+  @Post('roles')
+  @ApiOperation({ summary: 'Create a role' })
+  @ApiCreatedResponseData(RoleWithPermissionsResponseDto)
+  createRole(@Body() dto: CreateRoleDto) {
+    return this.rbac.createRole(dto);
+  }
+
+  @CheckPolicies(manageMasterDataPolicy())
+  @Patch('roles/:roleId')
+  @ApiOperation({ summary: 'Update role name or description' })
+  @ApiParam({ name: 'roleId', format: 'uuid' })
+  @ApiOkResponseData(RoleWithPermissionsResponseDto)
+  @ApiNotFoundResponse()
+  updateRole(@Param('roleId') roleId: string, @Body() dto: UpdateRoleDto) {
+    return this.rbac.updateRole(roleId, dto);
+  }
+
+  @CheckPolicies(manageMasterDataPolicy())
+  @Delete('roles/:roleId')
+  @ApiOperation({ summary: 'Delete a role (must have no users)' })
+  @ApiParam({ name: 'roleId', format: 'uuid' })
+  @ApiOkResponseData(DeleteRoleResponseDto)
+  @ApiNotFoundResponse()
+  deleteRole(@Param('roleId') roleId: string) {
+    return this.rbac.deleteRole(roleId);
   }
 
   @CheckPolicies(manageMasterDataPolicy())
