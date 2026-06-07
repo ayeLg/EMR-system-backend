@@ -36,6 +36,7 @@ export function createOpenApiDocument(app: INestApplication): OpenAPIObject {
     .addTag('wards', 'Inpatient wards')
     .addTag('insurance-providers', 'Insurance providers')
     .addTag('rbac', 'Roles and permissions')
+    .addTag('doctor-schedules', 'Doctor availability & slots')
     .build();
 
   return cleanupOpenApiDoc(SwaggerModule.createDocument(app, config));

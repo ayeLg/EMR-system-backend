@@ -38,5 +38,49 @@ export const UsersSeeder: Seeder = {
         status: 'ACTIVE',
       },
     });
+
+    const doctorRole = await prisma.role.findUnique({
+      where: { code: 'DOCTOR' },
+    });
+    if (doctorRole) {
+      const doctorPasswordHash = await bcrypt.hash('ChangeMe123!', 10);
+      const doctors = [
+        {
+          username: 'dr.aung',
+          email: 'aung.doctor@hospital.mm',
+          fullName: 'Dr. Aung Aung',
+          employeeId: 'EMP-D001',
+        },
+        {
+          username: 'dr.hla',
+          email: 'hla.doctor@hospital.mm',
+          fullName: 'Dr. Hla Hla',
+          employeeId: 'EMP-D002',
+        },
+      ] as const;
+
+      for (const doc of doctors) {
+        await prisma.user.upsert({
+          where: { username: doc.username },
+          update: {
+            email: doc.email,
+            fullName: doc.fullName,
+            employeeId: doc.employeeId,
+            passwordHash: doctorPasswordHash,
+            roleId: doctorRole.id,
+            status: 'ACTIVE',
+          },
+          create: {
+            username: doc.username,
+            email: doc.email,
+            fullName: doc.fullName,
+            employeeId: doc.employeeId,
+            passwordHash: doctorPasswordHash,
+            roleId: doctorRole.id,
+            status: 'ACTIVE',
+          },
+        });
+      }
+    }
   },
 };
