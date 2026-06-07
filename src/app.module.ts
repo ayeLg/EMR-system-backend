@@ -15,6 +15,7 @@ import { MasterDataModule } from '@/modules/master-data/master-data.module';
 import { RbacModule } from '@/modules/rbac/rbac.module';
 import { PatientsModule } from '@/modules/patients/patients.module';
 import { UsersModule } from '@/modules/users/users.module';
+import { AuditModule } from '@/modules/audit/audit.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { UsersModule } from '@/modules/users/users.module';
     PatientsModule,
     MasterDataModule,
     RbacModule,
+    AuditModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

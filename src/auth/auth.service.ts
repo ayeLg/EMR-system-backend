@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { UsersService } from '@/modules/users/users.service';
+import { AuditService } from '@/modules/audit/audit.service';
 import type { User, UserRecord } from '@/modules/users/entities/user.entity';
 import { LoginDto } from './dto/login.dto';
 
@@ -23,6 +24,7 @@ export class AuthService {
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
+    private readonly auditService: AuditService,
   ) {}
 
   async validateUser(
@@ -45,6 +47,15 @@ export class AuthService {
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }
+
+    // Write login event to append-only audit log
+    await this.auditService.create({
+      userId: user.id,
+      action: 'LOGIN',
+      module: 'Auth',
+      newData: { description: `${user.fullName} logged in successfully` },
+    });
+
     return this.buildAuthResponse(user);
   }
 
