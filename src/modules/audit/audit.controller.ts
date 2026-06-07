@@ -35,27 +35,31 @@ export class AuditLogsController {
       let resource = log.resourceId ?? '';
 
       if (log.newData && typeof log.newData === 'object') {
-        const data = log.newData as Record<string, any>;
-        resource =
-          data.mrn ||
-          data.employeeId ||
-          data.code ||
-          data.rxNumber ||
-          data.orderNo ||
-          data.invoiceNo ||
-          data.name ||
-          resource;
+        const data = log.newData as Record<string, unknown>;
+        const val =
+          data.mrn ??
+          data.employeeId ??
+          data.code ??
+          data.rxNumber ??
+          data.orderNo ??
+          data.invoiceNo ??
+          data.name;
+        if (typeof val === 'string') {
+          resource = val;
+        }
       } else if (log.oldData && typeof log.oldData === 'object') {
-        const data = log.oldData as Record<string, any>;
-        resource =
-          data.mrn ||
-          data.employeeId ||
-          data.code ||
-          data.rxNumber ||
-          data.orderNo ||
-          data.invoiceNo ||
-          data.name ||
-          resource;
+        const data = log.oldData as Record<string, unknown>;
+        const val =
+          data.mrn ??
+          data.employeeId ??
+          data.code ??
+          data.rxNumber ??
+          data.orderNo ??
+          data.invoiceNo ??
+          data.name;
+        if (typeof val === 'string') {
+          resource = val;
+        }
       }
 
       return {

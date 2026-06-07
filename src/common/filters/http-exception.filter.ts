@@ -30,13 +30,12 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const response = context.getResponse<Response>();
     const request = context.getRequest<Request & { requestId?: string }>();
 
-    const isHttpException = exception instanceof HttpException;
-    let status: HttpStatus = isHttpException
-      ? (exception as HttpException).getStatus()
-      : HttpStatus.INTERNAL_SERVER_ERROR;
-    const exceptionResponse = isHttpException
-      ? (exception as HttpException).getResponse()
-      : undefined;
+    let status: HttpStatus =
+      exception instanceof HttpException
+        ? exception.getStatus()
+        : HttpStatus.INTERNAL_SERVER_ERROR;
+    const exceptionResponse =
+      exception instanceof HttpException ? exception.getResponse() : undefined;
 
     let error = this.extractError(exceptionResponse, status);
     let message = this.extractMessage(exception, exceptionResponse, status);
@@ -53,13 +52,20 @@ export class HttpExceptionFilter implements ExceptionFilter {
           if (match) {
             target = match[1].replace(/["`]/g, '');
           } else if (exception.meta && typeof exception.meta === 'object') {
-            const cause = (exception.meta as any).driverAdapterError?.cause;
-            if (
-              cause?.constraint?.fields &&
-              Array.isArray(cause.constraint.fields)
-            ) {
-              target = cause.constraint.fields
-                .map((f: string) => f.replace(/["`]/g, ''))
+            const meta = exception.meta;
+            const driverAdapterError = meta.driverAdapterError as
+              | Record<string, unknown>
+              | undefined;
+            const cause = driverAdapterError?.cause as
+              | Record<string, unknown>
+              | undefined;
+            const constraint = cause?.constraint as
+              | Record<string, unknown>
+              | undefined;
+            const fields = constraint?.fields;
+            if (Array.isArray(fields)) {
+              target = fields
+                .map((f: unknown) => String(f).replace(/["`]/g, ''))
                 .join(', ');
             }
           }
@@ -73,7 +79,11 @@ export class HttpExceptionFilter implements ExceptionFilter {
         error = 'Not Found';
       } else if (exception.code === 'P2003') {
         status = HttpStatus.BAD_REQUEST;
-        message = `Foreign key constraint failed on the field: ${exception.meta?.field_name ?? 'field'}`;
+        const fieldName =
+          typeof exception.meta?.field_name === 'string'
+            ? exception.meta.field_name
+            : 'field';
+        message = `Foreign key constraint failed on the field: ${fieldName}`;
         error = 'Bad Request';
       }
     }
