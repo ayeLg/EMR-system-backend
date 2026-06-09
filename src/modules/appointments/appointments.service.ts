@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '@/prisma/prisma.service';
@@ -48,17 +52,151 @@ export class AppointmentsService {
     dto: CreateAppointmentDto,
     bookedById: string,
   ): Promise<AppointmentResponseDto> {
+    const apptDate = new Date(dto.scheduledAt);
+    const { dayOfWeek, hour, minute } = this.getLocalTimeDetails(apptDate);
+    const apptMinutes = hour * 60 + minute;
+
+    // 1. Fetch active doctor schedules for this day of week
+    const schedules = await this.prisma.doctorSchedule.findMany({
+      where: {
+        doctorId: dto.doctorId,
+        dayOfWeek,
+        isActive: true,
+        validFrom: { lte: apptDate },
+        OR: [{ validUntil: null }, { validUntil: { gte: apptDate } }],
+      },
+    });
+
+    if (schedules.length === 0) {
+      throw new BadRequestException(
+        'Doctor is not scheduled to work on this day.',
+      );
+    }
+
+    // 2. Check if appointment time falls within any working shift
+    let withinShift = false;
+    for (const schedule of schedules) {
+      const [startH, startM] = schedule.startTime.split(':').map(Number);
+      const [endH, endM] = schedule.endTime.split(':').map(Number);
+      const startMinutes = startH * 60 + startM;
+      const endMinutes = endH * 60 + endM;
+
+      if (apptMinutes >= startMinutes && apptMinutes <= endMinutes) {
+        withinShift = true;
+        break;
+      }
+    }
+
+    if (!withinShift) {
+      const shiftsStr = schedules
+        .map((s) => `${s.startTime}-${s.endTime}`)
+        .join(', ');
+      throw new BadRequestException(
+        `Selected time is outside the doctor's working hours. Available shifts: ${shiftsStr}`,
+      );
+    }
+
+    // 3. Double Booking check (Overlapping doctor appointments)
+    const duration = dto.durationMinutes ?? 15;
+    const apptStart = apptDate.getTime();
+    const apptEnd = apptStart + duration * 60 * 1000;
+
+    const startOfDay = new Date(apptDate);
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date(apptDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const existingDoctorAppts = await this.prisma.appointment.findMany({
+      where: {
+        doctorId: dto.doctorId,
+        status: {
+          notIn: ['CANCELLED', 'NO_SHOW'],
+        },
+        scheduledAt: {
+          gte: startOfDay,
+          lte: endOfDay,
+        },
+      },
+    });
+
+    for (const appt of existingDoctorAppts) {
+      const existingStart = appt.scheduledAt.getTime();
+      const existingEnd = existingStart + appt.durationMinutes * 60 * 1000;
+
+      if (apptStart < existingEnd && apptEnd > existingStart) {
+        throw new BadRequestException('Doctor is already booked at this time.');
+      }
+    }
+
+    // 4. Overlapping patient appointments check
+    const existingPatientAppts = await this.prisma.appointment.findMany({
+      where: {
+        patientId: dto.patientId,
+        status: {
+          notIn: ['CANCELLED', 'NO_SHOW'],
+        },
+        scheduledAt: {
+          gte: startOfDay,
+          lte: endOfDay,
+        },
+      },
+    });
+
+    for (const appt of existingPatientAppts) {
+      const existingStart = appt.scheduledAt.getTime();
+      const existingEnd = existingStart + appt.durationMinutes * 60 * 1000;
+
+      if (apptStart < existingEnd && apptEnd > existingStart) {
+        throw new BadRequestException(
+          'Patient already has an appointment at this time.',
+        );
+      }
+    }
+
     const appointment = await this.prisma.appointment.create({
       data: {
         ...dto,
         appointmentNo: await this.generateAppointmentNo(),
-        scheduledAt: new Date(dto.scheduledAt),
+        scheduledAt: apptDate,
         bookedById,
       },
       include: appointmentInclude,
     });
     const doctorNames = await this.getDoctorNameMap([appointment.doctorId]);
     return this.toResponse(appointment, doctorNames);
+  }
+
+  private getLocalTimeDetails(date: Date, timeZone = 'Asia/Yangon') {
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+      second: 'numeric',
+      hourCycle: 'h23',
+    });
+
+    const parts = formatter.formatToParts(date);
+    const partValues: Record<string, string> = {};
+    for (const part of parts) {
+      partValues[part.type] = part.value;
+    }
+
+    const year = Number(partValues.year);
+    const month = Number(partValues.month) - 1;
+    const day = Number(partValues.day);
+    const hour = Number(partValues.hour);
+    const minute = Number(partValues.minute);
+
+    const localDateObj = new Date(year, month, day, hour, minute);
+    return {
+      dayOfWeek: localDateObj.getDay(),
+      hour,
+      minute,
+    };
   }
 
   async update(

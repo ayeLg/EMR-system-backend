@@ -86,7 +86,47 @@ export class UsersService {
       include: { role: true, department: true },
       orderBy: { createdAt: 'desc' },
     });
-    return users.map((u) => this.toUserResponse(u));
+
+    const doctorIds = users
+      .filter((u) => u.role.code === 'DOCTOR')
+      .map((u) => u.id);
+    const schedules = await this.prisma.doctorSchedule.findMany({
+      where: {
+        doctorId: { in: doctorIds },
+        isActive: true,
+      },
+    });
+
+    const schedulesByDoctor = new Map<
+      string,
+      Array<{
+        id: string;
+        dayOfWeek: number;
+        startTime: string;
+        endTime: string;
+        slotMinutes: number;
+      }>
+    >();
+
+    for (const s of schedules) {
+      const list = schedulesByDoctor.get(s.doctorId) || [];
+      list.push({
+        id: s.id,
+        dayOfWeek: s.dayOfWeek,
+        startTime: s.startTime,
+        endTime: s.endTime,
+        slotMinutes: s.slotMinutes,
+      });
+      schedulesByDoctor.set(s.doctorId, list);
+    }
+
+    return users.map((u) => {
+      const res = this.toUserResponse(u);
+      if (u.role.code === 'DOCTOR') {
+        res.schedules = schedulesByDoctor.get(u.id) || [];
+      }
+      return res;
+    });
   }
 
   async generateEmployeeId(): Promise<string> {

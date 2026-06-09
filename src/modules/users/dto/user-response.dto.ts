@@ -28,4 +28,25 @@ export class UserResponseDto {
 
   @ApiProperty()
   updatedAt!: Date;
+
+  @ApiPropertyOptional({
+    isArray: true,
+    description: 'Doctor availability schedules',
+    example: [
+      {
+        id: 'uuid-1',
+        dayOfWeek: 1,
+        startTime: '09:00',
+        endTime: '12:00',
+        slotMinutes: 15,
+      },
+    ],
+  })
+  schedules?: Array<{
+    id: string;
+    dayOfWeek: number;
+    startTime: string;
+    endTime: string;
+    slotMinutes: number;
+  }>;
 }
