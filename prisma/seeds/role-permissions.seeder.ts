@@ -22,7 +22,7 @@ const ROLE_PERMISSION_KEYS: Record<string, readonly string[]> = {
   ],
   NURSE: [
     ...crud('patient', ['read']),
-    ...crud('appointment', ['read']),
+    ...crud('appointment', ['read', 'update']),
     ...crud('encounter', ['read', 'update']),
   ],
   RECEPTIONIST: [

@@ -33,6 +33,7 @@ export const ROLE_PERMISSIONS: Partial<Record<Role, RoleRule[]>> = {
     { action: Action.Read, subject: PATIENT_SUBJECT },
     { action: Action.Update, subject: PATIENT_SUBJECT },
     { action: Action.Read, subject: APPOINTMENT_SUBJECT },
+    { action: Action.Update, subject: APPOINTMENT_SUBJECT },
   ],
   [Role.Receptionist]: [
     { action: Action.Read, subject: PATIENT_SUBJECT },
