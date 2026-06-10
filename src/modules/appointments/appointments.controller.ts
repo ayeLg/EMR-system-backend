@@ -55,6 +55,14 @@ export class AppointmentsController {
   }
 
   @CheckPolicies(readAppointmentPolicy())
+  @Get('nurse-queue')
+  @ApiOperation({ summary: 'List arrived appointments for nurse queue' })
+  @ApiOkResponseData(AppointmentResponseDto, { isArray: true })
+  findNurseQueue(): Promise<AppointmentResponseDto[]> {
+    return this.appointmentsService.findNurseQueue();
+  }
+
+  @CheckPolicies(readAppointmentPolicy())
   @Get(':id')
   @ApiOperation({ summary: 'Get appointment by ID' })
   @ApiParam({ name: 'id', format: 'uuid' })

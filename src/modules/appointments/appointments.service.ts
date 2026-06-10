@@ -36,6 +36,20 @@ export class AppointmentsService {
     );
   }
 
+  async findNurseQueue(): Promise<AppointmentResponseDto[]> {
+    const appointments = await this.prisma.appointment.findMany({
+      where: { status: 'ARRIVED' },
+      include: appointmentInclude,
+      orderBy: { scheduledAt: 'asc' },
+    });
+    const doctorNames = await this.getDoctorNameMap(
+      appointments.map((appointment) => appointment.doctorId),
+    );
+    return appointments.map((appointment) =>
+      this.toResponse(appointment, doctorNames),
+    );
+  }
+
   async findOne(id: string): Promise<AppointmentResponseDto> {
     const appointment = await this.prisma.appointment.findUnique({
       where: { id },
