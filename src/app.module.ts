@@ -17,6 +17,7 @@ import { PatientsModule } from '@/modules/patients/patients.module';
 import { UsersModule } from '@/modules/users/users.module';
 import { AuditModule } from '@/modules/audit/audit.module';
 import { AppointmentsModule } from './modules/appointments/appointments.module';
+import { EncountersModule } from './modules/encounters/encounters.module';
 import { VitalsModule } from './modules/vitals/vitals.module';
 import { DoctorSchedulesModule } from '@/modules/doctor-schedules/doctor-schedules.module';
 
@@ -50,6 +51,7 @@ import { DoctorSchedulesModule } from '@/modules/doctor-schedules/doctor-schedul
     RbacModule,
     AuditModule,
     AppointmentsModule,
+    EncountersModule,
     VitalsModule,
     DoctorSchedulesModule,
   ],

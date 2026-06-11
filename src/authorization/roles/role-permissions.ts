@@ -2,6 +2,7 @@ import { Action } from '@/authorization/casl/types';
 import {
   APPOINTMENT_SUBJECT,
   AppSubjects,
+  ENCOUNTER_SUBJECT,
   MASTER_DATA_SUBJECT,
   PATIENT_SUBJECT,
   USER_SUBJECT,
@@ -20,6 +21,7 @@ export const ROLE_PERMISSIONS: Partial<Record<Role, RoleRule[]>> = {
     { action: Action.Manage, subject: USER_SUBJECT },
     { action: Action.Manage, subject: PATIENT_SUBJECT },
     { action: Action.Manage, subject: APPOINTMENT_SUBJECT },
+    { action: Action.Manage, subject: ENCOUNTER_SUBJECT },
     { action: Action.Manage, subject: MASTER_DATA_SUBJECT },
   ],
   [Role.Doctor]: [
@@ -27,6 +29,8 @@ export const ROLE_PERMISSIONS: Partial<Record<Role, RoleRule[]>> = {
     { action: Action.Update, subject: PATIENT_SUBJECT },
     { action: Action.Read, subject: APPOINTMENT_SUBJECT },
     { action: Action.Update, subject: APPOINTMENT_SUBJECT },
+    { action: Action.Read, subject: ENCOUNTER_SUBJECT },
+    { action: Action.Update, subject: ENCOUNTER_SUBJECT },
     { action: Action.Read, subject: USER_SUBJECT },
   ],
   [Role.Nurse]: [
@@ -34,6 +38,8 @@ export const ROLE_PERMISSIONS: Partial<Record<Role, RoleRule[]>> = {
     { action: Action.Update, subject: PATIENT_SUBJECT },
     { action: Action.Read, subject: APPOINTMENT_SUBJECT },
     { action: Action.Update, subject: APPOINTMENT_SUBJECT },
+    { action: Action.Read, subject: ENCOUNTER_SUBJECT },
+    { action: Action.Update, subject: ENCOUNTER_SUBJECT },
   ],
   [Role.Receptionist]: [
     { action: Action.Read, subject: PATIENT_SUBJECT },
@@ -41,5 +47,6 @@ export const ROLE_PERMISSIONS: Partial<Record<Role, RoleRule[]>> = {
     { action: Action.Read, subject: APPOINTMENT_SUBJECT },
     { action: Action.Create, subject: APPOINTMENT_SUBJECT },
     { action: Action.Update, subject: APPOINTMENT_SUBJECT },
+    { action: Action.Read, subject: ENCOUNTER_SUBJECT },
   ],
 };

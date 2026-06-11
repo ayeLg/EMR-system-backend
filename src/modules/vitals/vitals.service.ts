@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { randomBytes } from 'crypto';
+import { randomInt } from 'crypto';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '@/prisma/prisma.service';
 import { AppointmentResponseDto } from '@/modules/appointments/dto/appointment-response.dto';
@@ -99,8 +99,10 @@ export class VitalsService {
   private async generateEncounterNo(
     tx: Prisma.TransactionClient,
   ): Promise<string> {
-    for (let attempt = 0; attempt < 5; attempt += 1) {
-      const candidate = `ENC-${Date.now().toString(36).toUpperCase()}-${randomBytes(2).toString('hex').toUpperCase()}`;
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+      const candidate = `ENC-${randomInt(0, 10_000_000)
+        .toString()
+        .padStart(7, '0')}`;
       const existing = await tx.encounter.findUnique({
         where: { encounterNo: candidate },
         select: { id: true },

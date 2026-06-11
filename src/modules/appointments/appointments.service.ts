@@ -3,7 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import { randomBytes } from 'crypto';
+import { randomBytes, randomInt } from 'crypto';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '@/prisma/prisma.service';
 import { AppointmentResponseDto } from './dto/appointment-response.dto';
@@ -218,13 +218,38 @@ export class AppointmentsService {
     dto: UpdateAppointmentDto,
   ): Promise<AppointmentResponseDto> {
     await this.ensureExists(id);
-    const appointment = await this.prisma.appointment.update({
-      where: { id },
-      data: {
-        ...dto,
-        scheduledAt: dto.scheduledAt ? new Date(dto.scheduledAt) : undefined,
-      },
-      include: appointmentInclude,
+    const appointment = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.appointment.update({
+        where: { id },
+        data: {
+          ...dto,
+          scheduledAt: dto.scheduledAt ? new Date(dto.scheduledAt) : undefined,
+        },
+        include: appointmentInclude,
+      });
+
+      if (dto.status === 'IN_PROGRESS') {
+        const existing = await tx.encounter.findUnique({
+          where: { appointmentId: id },
+          select: { id: true },
+        });
+
+        if (!existing) {
+          await tx.encounter.create({
+            data: {
+              encounterNo: await this.generateEncounterNo(tx),
+              patientId: updated.patientId,
+              appointmentId: updated.id,
+              attendingDoctorId: updated.doctorId,
+              encounterType: updated.type,
+              status: 'OPEN',
+              startTime: new Date(),
+            },
+          });
+        }
+      }
+
+      return updated;
     });
     const doctorNames = await this.getDoctorNameMap([appointment.doctorId]);
     return this.toResponse(appointment, doctorNames);
@@ -257,6 +282,24 @@ export class AppointmentsService {
       }
     }
     throw new Error('Unable to generate a unique appointment number');
+  }
+
+  private async generateEncounterNo(
+    tx: Prisma.TransactionClient,
+  ): Promise<string> {
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+      const candidate = `ENC-${randomInt(0, 10_000_000)
+        .toString()
+        .padStart(7, '0')}`;
+      const existing = await tx.encounter.findUnique({
+        where: { encounterNo: candidate },
+        select: { id: true },
+      });
+      if (!existing) {
+        return candidate;
+      }
+    }
+    throw new Error('Unable to generate a unique encounter number');
   }
 
   private async getDoctorNameMap(

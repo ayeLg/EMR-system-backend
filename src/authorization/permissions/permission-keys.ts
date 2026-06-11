@@ -2,6 +2,7 @@ import { Action } from '@/authorization/casl/types';
 import {
   APPOINTMENT_SUBJECT,
   AppSubjects,
+  ENCOUNTER_SUBJECT,
   MASTER_DATA_SUBJECT,
   PATIENT_SUBJECT,
   USER_SUBJECT,
@@ -25,7 +26,7 @@ export {
 const MODULE_TO_SUBJECT: Record<string, AppSubjects> = {
   patient: PATIENT_SUBJECT,
   appointment: APPOINTMENT_SUBJECT,
-  encounter: PATIENT_SUBJECT,
+  encounter: ENCOUNTER_SUBJECT,
   pharmacy: PATIENT_SUBJECT,
   laboratory: PATIENT_SUBJECT,
   billing: PATIENT_SUBJECT,
