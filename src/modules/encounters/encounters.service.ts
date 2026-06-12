@@ -9,6 +9,7 @@ import { Prisma } from '@prisma/client';
 import { Role } from '@/authorization/roles/role.enum';
 import { PrismaService } from '@/prisma/prisma.service';
 import type { User } from '@/modules/users/entities/user.entity';
+import { AuditService } from '@/modules/audit/audit.service';
 import {
   EncounterDetailResponseDto,
   EncounterDiagnosisDto,
@@ -37,10 +38,19 @@ type EncounterWithBaseRelations = Prisma.EncounterGetPayload<{
 
 @Injectable()
 export class EncountersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditService: AuditService,
+  ) {}
 
-  async findAll(): Promise<EncounterResponseDto[]> {
+  async findAll(user: User): Promise<EncounterResponseDto[]> {
+    const where: Prisma.EncounterWhereInput = {};
+    if (user.role === Role.Doctor) {
+      where.attendingDoctorId = user.id;
+    }
+
     const encounters = await this.prisma.encounter.findMany({
+      where,
       include: encounterInclude,
       orderBy: { startTime: 'desc' },
     });
@@ -165,10 +175,30 @@ export class EncountersService {
         painScore: dto.painScore,
         notes: dto.notes,
       },
-      select: { id: true },
+      select: {
+        id: true,
+        systolicBp: true,
+        diastolicBp: true,
+        heartRate: true,
+        temperatureCelsius: true,
+        oxygenSaturation: true,
+        weightKg: true,
+        heightCm: true,
+        bmi: true,
+        painScore: true,
+        notes: true,
+      },
     });
 
-    return vitals;
+    await this.auditService.create({
+      userId: recordedById,
+      action: 'RECORD_VITALS',
+      module: 'ENCOUNTER',
+      resourceId: encounterId,
+      newData: vitals,
+    });
+
+    return { id: vitals.id };
   }
 
   async createSoapNote(
@@ -190,10 +220,26 @@ export class EncountersService {
         isAmended: Boolean(dto.amendedFrom),
         amendedFrom: dto.amendedFrom,
       },
-      select: { id: true },
+      select: {
+        id: true,
+        subjective: true,
+        objective: true,
+        assessment: true,
+        plan: true,
+        isAmended: true,
+        amendedFrom: true,
+      },
     });
 
-    return note;
+    await this.auditService.create({
+      userId: authorId,
+      action: 'CREATE_SOAP_NOTE',
+      module: 'ENCOUNTER',
+      resourceId: encounterId,
+      newData: note,
+    });
+
+    return { id: note.id };
   }
 
   async addDiagnosis(
@@ -214,10 +260,25 @@ export class EncountersService {
         diagnosedById,
         notes: dto.notes,
       },
-      select: { id: true },
+      select: {
+        id: true,
+        icd10Code: true,
+        description: true,
+        type: true,
+        status: true,
+        notes: true,
+      },
     });
 
-    return diagnosis;
+    await this.auditService.create({
+      userId: diagnosedById,
+      action: 'ADD_DIAGNOSIS',
+      module: 'ENCOUNTER',
+      resourceId: encounterId,
+      newData: diagnosis,
+    });
+
+    return { id: diagnosis.id };
   }
 
   async createPrescription(
@@ -279,10 +340,32 @@ export class EncountersService {
           },
         },
       },
-      select: { id: true },
+      select: {
+        id: true,
+        rxNumber: true,
+        notes: true,
+        items: {
+          select: {
+            medicationId: true,
+            dose: true,
+            route: true,
+            frequency: true,
+            durationDays: true,
+            quantityPrescribed: true,
+          },
+        },
+      },
     });
 
-    return prescription;
+    await this.auditService.create({
+      userId: prescribedById,
+      action: 'CREATE_PRESCRIPTION',
+      module: 'ENCOUNTER',
+      resourceId: encounterId,
+      newData: prescription,
+    });
+
+    return { id: prescription.id };
   }
 
   async createLabOrder(
@@ -304,10 +387,24 @@ export class EncountersService {
           create: dto.labTestIds.map((labTestId) => ({ labTestId })),
         },
       },
-      select: { id: true },
+      select: {
+        id: true,
+        orderNo: true,
+        priority: true,
+        clinicalNotes: true,
+        items: { select: { labTestId: true } },
+      },
     });
 
-    return order;
+    await this.auditService.create({
+      userId: orderedById,
+      action: 'CREATE_LAB_ORDER',
+      module: 'ENCOUNTER',
+      resourceId: encounterId,
+      newData: order,
+    });
+
+    return { id: order.id };
   }
 
   async createMedicalOrder(
@@ -327,10 +424,25 @@ export class EncountersService {
         details: dto.details as Prisma.InputJsonValue | undefined,
         notes: dto.notes,
       },
-      select: { id: true },
+      select: {
+        id: true,
+        orderType: true,
+        priority: true,
+        description: true,
+        details: true,
+        notes: true,
+      },
     });
 
-    return order;
+    await this.auditService.create({
+      userId: orderedById,
+      action: 'CREATE_MEDICAL_ORDER',
+      module: 'ENCOUNTER',
+      resourceId: encounterId,
+      newData: order,
+    });
+
+    return { id: order.id };
   }
 
   async updateStatus(
@@ -384,7 +496,7 @@ export class EncountersService {
         });
       }
 
-      return tx.encounter.update({
+      const updatedEncounter = await tx.encounter.update({
         where: { id: encounterId },
         data: {
           status: dto.status,
@@ -392,6 +504,17 @@ export class EncountersService {
         },
         include: encounterInclude,
       });
+
+      await this.auditService.create({
+        userId: user.id,
+        action: `UPDATE_STATUS_${dto.status}`,
+        module: 'ENCOUNTER',
+        resourceId: encounterId,
+        oldData: { status: encounter.status },
+        newData: { status: updatedEncounter.status },
+      });
+
+      return updatedEncounter;
     });
 
     return this.toEncounterResponse(updated);

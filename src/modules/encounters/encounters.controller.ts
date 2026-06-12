@@ -48,8 +48,8 @@ export class EncountersController {
   @Get()
   @ApiOperation({ summary: 'List encounters' })
   @ApiOkResponseData(EncounterResponseDto, { isArray: true })
-  findAll(): Promise<EncounterResponseDto[]> {
-    return this.encountersService.findAll();
+  findAll(@CurrentUser() user: User): Promise<EncounterResponseDto[]> {
+    return this.encountersService.findAll(user);
   }
 
   @CheckPolicies(readEncounterPolicy())
