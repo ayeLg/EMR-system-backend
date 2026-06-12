@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { randomInt } from 'crypto';
+import { randomInt } from 'node:crypto';
 import { Prisma } from '@prisma/client';
 import { Role } from '@/authorization/roles/role.enum';
 import { PrismaService } from '@/prisma/prisma.service';
