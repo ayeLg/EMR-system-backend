@@ -20,6 +20,7 @@ import { AppointmentsModule } from './modules/appointments/appointments.module';
 import { EncountersModule } from './modules/encounters/encounters.module';
 import { VitalsModule } from './modules/vitals/vitals.module';
 import { DoctorSchedulesModule } from '@/modules/doctor-schedules/doctor-schedules.module';
+import { PharmacyModule } from '@/modules/pharmacy/pharmacy.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { DoctorSchedulesModule } from '@/modules/doctor-schedules/doctor-schedul
     EncountersModule,
     VitalsModule,
     DoctorSchedulesModule,
+    PharmacyModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

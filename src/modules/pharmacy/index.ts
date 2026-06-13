@@ -1,6 +1,3 @@
-/**
- * Pharmacy module — placeholder barrel export.
- * Replace this file when the pharmacy module is implemented.
- * @module pharmacy
- */
+export * from './pharmacy.module';
+export * from './pharmacy.service';
 export const PHARMACY_MODULE = 'pharmacy' as const;
