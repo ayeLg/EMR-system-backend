@@ -5,6 +5,7 @@ export const RBAC_MODULES = [
   { module: 'encounter', resource: 'Encounter' },
   { module: 'pharmacy', resource: 'Pharmacy' },
   { module: 'laboratory', resource: 'Laboratory' },
+  { module: 'radiology', resource: 'Radiology' },
   { module: 'billing', resource: 'Billing' },
   { module: 'report', resource: 'Report' },
   { module: 'user', resource: 'User' },

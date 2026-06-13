@@ -22,6 +22,7 @@ import { VitalsModule } from './modules/vitals/vitals.module';
 import { DoctorSchedulesModule } from '@/modules/doctor-schedules/doctor-schedules.module';
 import { PharmacyModule } from '@/modules/pharmacy/pharmacy.module';
 import { LaboratoryModule } from '@/modules/laboratory/laboratory.module';
+import { RadiologyModule } from '@/modules/radiology/radiology.module';
 
 @Module({
   imports: [
@@ -58,6 +59,7 @@ import { LaboratoryModule } from '@/modules/laboratory/laboratory.module';
     DoctorSchedulesModule,
     PharmacyModule,
     LaboratoryModule,
+    RadiologyModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

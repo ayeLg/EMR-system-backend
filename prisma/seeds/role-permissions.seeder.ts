@@ -18,6 +18,7 @@ const ROLE_PERMISSION_KEYS: Record<string, readonly string[]> = {
     ...crud('appointment', ['read', 'create', 'update']),
     ...crud('encounter', ['read', 'create', 'update']),
     ...crud('laboratory', ['read']),
+    ...crud('radiology', ['read', 'create', 'update']),
     ...crud('report', ['read']),
   ],
   NURSE: [
