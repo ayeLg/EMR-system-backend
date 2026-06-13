@@ -77,6 +77,8 @@ export class EncountersService {
       pastEncounters,
       vitals,
       diagnoses,
+      labOrders,
+      medicalOrders,
     ] = await Promise.all([
       this.prisma.allergy.findMany({
         where: { patientId: encounter.patientId, status: 'ACTIVE' },
@@ -107,6 +109,21 @@ export class EncountersService {
         where: { encounterId: encounter.id },
         orderBy: { diagnosedAt: 'desc' },
       }),
+      this.prisma.labOrder.findMany({
+        where: { encounterId: id },
+        include: {
+          items: {
+            include: {
+              labTest: true,
+            },
+          },
+        },
+        orderBy: { orderedAt: 'desc' },
+      }),
+      this.prisma.medicalOrder.findMany({
+        where: { encounterId: id },
+        orderBy: { orderedAt: 'desc' },
+      }),
     ]);
 
     return {
@@ -134,6 +151,28 @@ export class EncountersService {
       diagnoses: diagnoses.map((diagnosis) =>
         this.toDiagnosisResponse(diagnosis),
       ),
+      labOrders: labOrders.map((lo) => ({
+        id: lo.id,
+        orderNo: lo.orderNo,
+        priority: lo.priority,
+        status: lo.status,
+        orderedAt: lo.orderedAt.toISOString(),
+        clinicalNotes: lo.clinicalNotes ?? undefined,
+        items: lo.items.map((item) => ({
+          id: item.id,
+          labTestId: item.labTestId,
+          name: item.labTest.name,
+          code: item.labTest.code,
+        })),
+      })),
+      medicalOrders: medicalOrders.map((mo) => ({
+        id: mo.id,
+        orderType: mo.orderType,
+        priority: mo.priority,
+        description: mo.description,
+        notes: mo.notes ?? undefined,
+        orderedAt: mo.orderedAt.toISOString(),
+      })),
     };
   }
 

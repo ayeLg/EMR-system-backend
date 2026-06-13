@@ -1,7 +1,7 @@
-import { LABORATORY_MODULE } from './index';
+import { LaboratoryModule } from './index';
 
-describe('laboratory module placeholder', () => {
-  it('exports the module name constant', () => {
-    expect(LABORATORY_MODULE).toBe('laboratory');
+describe('LaboratoryModule', () => {
+  it('should be defined', () => {
+    expect(LaboratoryModule).toBeDefined();
   });
 });

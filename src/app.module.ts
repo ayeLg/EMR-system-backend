@@ -21,6 +21,7 @@ import { EncountersModule } from './modules/encounters/encounters.module';
 import { VitalsModule } from './modules/vitals/vitals.module';
 import { DoctorSchedulesModule } from '@/modules/doctor-schedules/doctor-schedules.module';
 import { PharmacyModule } from '@/modules/pharmacy/pharmacy.module';
+import { LaboratoryModule } from '@/modules/laboratory/laboratory.module';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { PharmacyModule } from '@/modules/pharmacy/pharmacy.module';
     VitalsModule,
     DoctorSchedulesModule,
     PharmacyModule,
+    LaboratoryModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

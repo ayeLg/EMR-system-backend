@@ -60,6 +60,63 @@ export class EncounterDiagnosisDto {
   type!: string;
 }
 
+export class LabOrderItemDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  labTestId!: string;
+
+  @ApiProperty()
+  name!: string;
+
+  @ApiProperty()
+  code!: string;
+}
+
+export class EncounterLabOrderDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  orderNo!: string;
+
+  @ApiProperty()
+  priority!: string;
+
+  @ApiProperty()
+  status!: string;
+
+  @ApiProperty()
+  orderedAt!: string;
+
+  @ApiPropertyOptional()
+  clinicalNotes?: string;
+
+  @ApiProperty({ type: LabOrderItemDto, isArray: true })
+  items!: LabOrderItemDto[];
+}
+
+export class EncounterMedicalOrderDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  orderType!: string;
+
+  @ApiProperty()
+  priority!: string;
+
+  @ApiProperty()
+  description!: string;
+
+  @ApiPropertyOptional()
+  notes?: string;
+
+  @ApiProperty()
+  orderedAt!: string;
+}
+
 export class EncounterDetailResponseDto extends EncounterResponseDto {
   @ApiProperty({ type: Object, isArray: true })
   allergies!: { allergenName: string; severity: string }[];
@@ -78,6 +135,12 @@ export class EncounterDetailResponseDto extends EncounterResponseDto {
 
   @ApiProperty({ type: EncounterDiagnosisDto, isArray: true })
   diagnoses!: EncounterDiagnosisDto[];
+
+  @ApiProperty({ type: EncounterLabOrderDto, isArray: true })
+  labOrders!: EncounterLabOrderDto[];
+
+  @ApiProperty({ type: EncounterMedicalOrderDto, isArray: true })
+  medicalOrders!: EncounterMedicalOrderDto[];
 }
 
 export class EncounterWriteResponseDto {

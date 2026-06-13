@@ -16,6 +16,7 @@ import { PermissionsSeeder } from './seeds/permissions.seeder';
 import { RolePermissionsSeeder } from './seeds/role-permissions.seeder';
 import { UsersSeeder } from './seeds/users.seeder';
 import { PharmacySeeder } from './seeds/pharmacy.seeder';
+import { LaboratorySeeder } from './seeds/laboratory.seeder';
 // </seeder-imports>
 
 // Order matters: list dependencies before dependents.
@@ -25,6 +26,7 @@ const seeders: Seeder[] = [
   RolePermissionsSeeder,
   UsersSeeder,
   PharmacySeeder,
+  LaboratorySeeder,
   // <seeder-registry> — do not remove this marker (used by make:seeder)
 ];
 
