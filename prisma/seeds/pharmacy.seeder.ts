@@ -194,7 +194,7 @@ export const PharmacySeeder: Seeder = {
           dosageForm: med.dosageForm,
           strength: med.strength,
           unit: med.unit,
-          interactions: med.interactions as Prisma.InputJsonValue,
+          interactions: med.interactions,
         },
         create: {
           code: med.code,
@@ -203,7 +203,7 @@ export const PharmacySeeder: Seeder = {
           dosageForm: med.dosageForm,
           strength: med.strength,
           unit: med.unit,
-          interactions: med.interactions as Prisma.InputJsonValue,
+          interactions: med.interactions,
         },
       });
     }
