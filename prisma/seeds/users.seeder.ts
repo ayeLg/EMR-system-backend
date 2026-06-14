@@ -233,8 +233,60 @@ export const UsersSeeder: Seeder = {
       });
     }
 
+    // 7. Seed Notifications for Admin User
+    await prisma.notification.deleteMany({
+      where: { userId: systemAdminUser.id },
+    });
+
+    await prisma.notification.createMany({
+      data: [
+        {
+          userId: systemAdminUser.id,
+          type: 'CRITICAL_VALUE',
+          title: 'Critical lab value',
+          body: 'Potassium 7.0 mmol/L — Aung Aung (LAB-0400031)',
+          isRead: false,
+          createdAt: new Date(Date.now() - 2 * 60 * 1000), // 2 min ago
+        },
+        {
+          userId: systemAdminUser.id,
+          type: 'LAB_RESULT_READY',
+          title: 'Lab result ready',
+          body: 'Lipid panel resulted — Hla Hla',
+          isRead: false,
+          createdAt: new Date(Date.now() - 15 * 60 * 1000), // 15 min ago
+        },
+        {
+          userId: systemAdminUser.id,
+          type: 'APPOINTMENT_REMINDER',
+          title: 'Patient arrived',
+          body: 'Kyaw Min checked in for 10:00 OPD',
+          isRead: false,
+          createdAt: new Date(Date.now() - 20 * 60 * 1000), // 20 min ago
+        },
+        {
+          userId: systemAdminUser.id,
+          type: 'MEDICATION_DUE',
+          title: 'Prescription pending',
+          body: 'RX-0300010 awaiting dispensing',
+          isRead: true,
+          readAt: new Date(Date.now() - 30 * 60 * 1000),
+          createdAt: new Date(Date.now() - 60 * 60 * 1000), // 1 hr ago
+        },
+        {
+          userId: systemAdminUser.id,
+          type: 'SYSTEM_ALERT',
+          title: 'Backup completed',
+          body: 'Nightly database backup succeeded',
+          isRead: true,
+          readAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
+          createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000), // 3 hr ago
+        },
+      ],
+    });
+
     console.log(
-      'Successfully seeded roles, departments, doctors, patients, and schedules.',
+      'Successfully seeded roles, departments, doctors, patients, schedules, and notifications.',
     );
   },
 };
