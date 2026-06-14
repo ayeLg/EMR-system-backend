@@ -27,6 +27,7 @@ import { IpdModule } from '@/modules/ipd/ipd.module';
 import { ClinicalDocsModule } from '@/modules/clinical-docs/clinical-docs.module';
 import { BillingModule } from '@/modules/billing/billing.module';
 import { NotificationModule } from '@/modules/notifications/notification.module';
+import { ReportsModule } from '@/modules/reports/reports.module';
 
 @Module({
   imports: [
@@ -68,6 +69,7 @@ import { NotificationModule } from '@/modules/notifications/notification.module'
     ClinicalDocsModule,
     BillingModule,
     NotificationModule,
+    ReportsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
