@@ -24,6 +24,7 @@ import { PharmacyModule } from '@/modules/pharmacy/pharmacy.module';
 import { LaboratoryModule } from '@/modules/laboratory/laboratory.module';
 import { RadiologyModule } from '@/modules/radiology/radiology.module';
 import { IpdModule } from '@/modules/ipd/ipd.module';
+import { ClinicalDocsModule } from '@/modules/clinical-docs/clinical-docs.module';
 
 @Module({
   imports: [
@@ -62,6 +63,7 @@ import { IpdModule } from '@/modules/ipd/ipd.module';
     LaboratoryModule,
     RadiologyModule,
     IpdModule,
+    ClinicalDocsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

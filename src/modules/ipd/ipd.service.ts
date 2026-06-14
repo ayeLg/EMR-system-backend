@@ -80,6 +80,7 @@ export class IpdService {
       return {
         id: e.id,
         patientName: `${e.patient.firstName} ${e.patient.lastName}`,
+        patientId: e.patientId,
         mrn: e.patient.mrn,
         ward: e.ward?.name ?? 'Unknown Ward',
         wardId: e.wardId,
