@@ -1,11 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import {
+  PatientAllergyDto,
   PatientDetailResponseDto,
   PatientResponseDto,
 } from './dto/patient-response.dto';
 import { CreatePatientDto } from './dto/create-patient.dto';
 import { UpdatePatientDto } from './dto/update-patient.dto';
+import { AddAllergyDto } from './dto/add-allergy.dto';
 import { PrismaService } from '@/prisma/prisma.service';
 
 const detailInclude = {
@@ -161,6 +163,40 @@ export class PatientsService {
         doctor: encounter.attendingDoctor?.fullName ?? undefined,
         status: encounter.status,
       })),
+    };
+  }
+
+  async addAllergy(
+    patientId: string,
+    dto: AddAllergyDto,
+    recordedById: string,
+  ): Promise<PatientAllergyDto> {
+    const patient = await this.prisma.patient.findUnique({
+      where: { id: patientId },
+      select: { id: true },
+    });
+    if (!patient) {
+      throw new NotFoundException(`Patient ${patientId} not found`);
+    }
+
+    const allergy = await this.prisma.allergy.create({
+      data: {
+        patientId,
+        allergenType: dto.allergenType,
+        allergenName: dto.allergenName,
+        severity: dto.severity,
+        reaction: dto.reaction ?? '',
+        confirmedById: recordedById,
+        status: 'ACTIVE',
+      },
+    });
+
+    return {
+      id: allergy.id,
+      allergenType: allergy.allergenType,
+      allergenName: allergy.allergenName,
+      severity: allergy.severity,
+      reaction: allergy.reaction ?? undefined,
     };
   }
 }

@@ -23,8 +23,10 @@ import {
 } from '@/common/swagger/api-response.decorator';
 import { SWAGGER_BEARER_AUTH } from '@/common/swagger/setup-swagger';
 import { CreatePatientDto } from './dto/create-patient.dto';
+import { AddAllergyDto } from './dto/add-allergy.dto';
 import {
   DeletePatientResponseDto,
+  PatientAllergyDto,
   PatientDetailResponseDto,
   PatientResponseDto,
 } from './dto/patient-response.dto';
@@ -98,5 +100,18 @@ export class PatientsController {
   async remove(@Param('id') id: string): Promise<DeletePatientResponseDto> {
     await this.patientsService.remove(id);
     return { deleted: true };
+  }
+
+  @CheckPolicies(updatePatientPolicy())
+  @Post(':id/allergies')
+  @ApiOperation({ summary: 'Add an allergy to a patient' })
+  @ApiParam({ name: 'id', format: 'uuid' })
+  @ApiCreatedResponseData(PatientAllergyDto)
+  addAllergy(
+    @Param('id') id: string,
+    @Body() dto: AddAllergyDto,
+    @CurrentUser() user: User,
+  ): Promise<PatientAllergyDto> {
+    return this.patientsService.addAllergy(id, dto, user.id);
   }
 }
