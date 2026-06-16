@@ -7,6 +7,8 @@ import { randomInt } from 'node:crypto';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '@/prisma/prisma.service';
 import { AuditService } from '@/modules/audit/audit.service';
+import { CryptoService } from '@/common/security/crypto.service';
+import { decryptPatientName } from '@/common/security/phi.util';
 import {
   AdmitPatientDto,
   DischargePatientDto,
@@ -18,6 +20,7 @@ export class IpdService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
+    private readonly crypto: CryptoService,
   ) {}
 
   async getWardOccupancy() {
@@ -79,7 +82,7 @@ export class IpdService {
 
       return {
         id: e.id,
-        patientName: `${e.patient.firstName} ${e.patient.lastName}`,
+        patientName: decryptPatientName(this.crypto, e.patient),
         patientId: e.patientId,
         mrn: e.patient.mrn,
         ward: e.ward?.name ?? 'Unknown Ward',

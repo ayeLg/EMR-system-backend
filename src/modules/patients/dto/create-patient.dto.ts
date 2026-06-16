@@ -27,6 +27,8 @@ export const CreatePatientSchema = z.object({
   address: z.string().max(255).optional(),
   city: z.string().max(100).optional(),
   township: z.string().max(100).optional(),
+  // Set true to register despite a duplicate-match warning (staff override).
+  overrideDuplicate: z.boolean().optional(),
 });
 
 export class CreatePatientDto extends createZodDto(CreatePatientSchema) {}

@@ -5,6 +5,8 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '@/prisma/prisma.service';
+import { CryptoService } from '@/common/security/crypto.service';
+import { decryptPatientName } from '@/common/security/phi.util';
 import {
   RecordPaymentDto,
   SubmitClaimDto,
@@ -137,7 +139,10 @@ interface RawInvoiceInput {
 
 @Injectable()
 export class BillingService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly crypto: CryptoService,
+  ) {}
 
   async getInvoices(): Promise<SerializedInvoice[]> {
     const invoices = await this.prisma.invoice.findMany({
@@ -155,7 +160,7 @@ export class BillingService {
 
     return invoices.map((inv) => {
       const patientName = inv.patient
-        ? `${inv.patient.firstName} ${inv.patient.lastName}`
+        ? decryptPatientName(this.crypto, inv.patient)
         : 'Unknown';
       const mrn = inv.patient?.mrn ?? '—';
       return {
@@ -214,7 +219,7 @@ export class BillingService {
 
       if (!updatedInvoice) throw new NotFoundException('Invoice not found');
       const patientName = updatedInvoice.patient
-        ? `${updatedInvoice.patient.firstName} ${updatedInvoice.patient.lastName}`
+        ? decryptPatientName(this.crypto, updatedInvoice.patient)
         : 'Unknown';
       const mrn = updatedInvoice.patient?.mrn ?? '—';
       return {
@@ -225,7 +230,7 @@ export class BillingService {
     }
 
     const patientName = invoice.patient
-      ? `${invoice.patient.firstName} ${invoice.patient.lastName}`
+      ? decryptPatientName(this.crypto, invoice.patient)
       : 'Unknown';
     const mrn = invoice.patient?.mrn ?? '—';
     return {
@@ -411,6 +416,25 @@ export class BillingService {
     });
   }
 
+  /**
+   * Coverage % resolution order: explicit override → patient's primary active
+   * policy (`coverageDetails.coveragePercent`) → 80% default.
+   */
+  private async resolveCoveragePercent(
+    patientId: string,
+    override?: number,
+  ): Promise<number> {
+    if (override != null) return override;
+    const insurance = await this.prisma.patientInsurance.findFirst({
+      where: { patientId, isActive: true, isPrimary: true },
+      select: { coverageDetails: true },
+    });
+    const pct = (
+      insurance?.coverageDetails as { coveragePercent?: number } | null
+    )?.coveragePercent;
+    return typeof pct === 'number' ? pct : 80;
+  }
+
   async submitClaim(invoiceId: string, dto: SubmitClaimDto) {
     const invoice = await this.prisma.invoice.findUnique({
       where: { id: invoiceId },
@@ -419,7 +443,16 @@ export class BillingService {
     if (!invoice) throw new NotFoundException('Invoice not found');
 
     const total = Number(invoice.totalAmount);
-    const claimAmount = total * 0.8;
+    const coveragePercent = await this.resolveCoveragePercent(
+      invoice.patientId,
+      dto.coveragePercent,
+    );
+    // Coverage can't exceed what's still outstanding on the invoice.
+    const outstanding = Math.max(
+      0,
+      total - Number(invoice.paidAmount) - Number(invoice.insuranceCoverage),
+    );
+    const claimAmount = Math.min(total * (coveragePercent / 100), outstanding);
     const newCoverage = Number(invoice.insuranceCoverage) + claimAmount;
     const newBalance = Math.max(
       0,

@@ -150,14 +150,6 @@ export class ReportsService {
       count: d._count.id,
     }));
 
-    // Fallback/Mock burden values if database is empty so charts don't look completely empty on fresh installs
-    if (diseaseBurden.length === 0) {
-      diseaseBurden.push(
-        { disease: 'Hypertension (I10)', count: 0 },
-        { disease: 'Type 2 diabetes (E11)', count: 0 },
-      );
-    }
-
     // 5. Appointment Status Breakdown
     const appointmentStatus = await this.prisma.appointment.groupBy({
       by: ['status'],

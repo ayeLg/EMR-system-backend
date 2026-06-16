@@ -2,6 +2,7 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { PharmacyService } from './pharmacy.service';
 import type { PrismaService } from '@/prisma/prisma.service';
 import type { AuditService } from '@/modules/audit/audit.service';
+import type { CryptoService } from '@/common/security/crypto.service';
 
 describe('PharmacyService (unit)', () => {
   let service: PharmacyService;
@@ -108,9 +109,16 @@ describe('PharmacyService (unit)', () => {
       create: jest.fn(),
     };
 
+    const crypto = {
+      encrypt: (v: string) => v,
+      decrypt: (v: string) => v,
+      safeDecrypt: (v: string | null) => v,
+      blindIndex: (v: string) => `hash:${v}`,
+    };
     service = new PharmacyService(
       prisma as unknown as PrismaService,
       auditService as unknown as AuditService,
+      crypto as unknown as CryptoService,
     );
   });
 

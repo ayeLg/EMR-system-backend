@@ -5,6 +5,7 @@ import { LabTestsModule } from './lab-tests/lab-tests.module';
 import { MedicationsModule } from './medications/medications.module';
 import { ServicesCatalogModule } from './services-catalog/services-catalog.module';
 import { WardsModule } from './wards/wards.module';
+import { Icd10Module } from './icd10/icd10.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { WardsModule } from './wards/wards.module';
     LabTestsModule,
     WardsModule,
     InsuranceProvidersModule,
+    Icd10Module,
   ],
 })
 export class MasterDataModule {}

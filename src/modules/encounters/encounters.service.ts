@@ -8,6 +8,8 @@ import { randomInt } from 'node:crypto';
 import { Prisma } from '@prisma/client';
 import { Role } from '@/authorization/roles/role.enum';
 import { PrismaService } from '@/prisma/prisma.service';
+import { CryptoService } from '@/common/security/crypto.service';
+import { decryptPatientName } from '@/common/security/phi.util';
 import type { User } from '@/modules/users/entities/user.entity';
 import { AuditService } from '@/modules/audit/audit.service';
 import {
@@ -41,6 +43,7 @@ export class EncountersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
+    private readonly crypto: CryptoService,
   ) {}
 
   async findAll(user: User): Promise<EncounterResponseDto[]> {
@@ -79,6 +82,7 @@ export class EncountersService {
       diagnoses,
       labOrders,
       medicalOrders,
+      soapNotes,
     ] = await Promise.all([
       this.prisma.allergy.findMany({
         where: { patientId: encounter.patientId, status: 'ACTIVE' },
@@ -123,6 +127,10 @@ export class EncountersService {
       this.prisma.medicalOrder.findMany({
         where: { encounterId: id },
         orderBy: { orderedAt: 'desc' },
+      }),
+      this.prisma.clinicalNote.findMany({
+        where: { encounterId: id, noteType: 'SOAP' },
+        orderBy: { createdAt: 'desc' },
       }),
     ]);
 
@@ -172,6 +180,16 @@ export class EncountersService {
         description: mo.description,
         notes: mo.notes ?? undefined,
         orderedAt: mo.orderedAt.toISOString(),
+      })),
+      soapNotes: soapNotes.map((note) => ({
+        id: note.id,
+        subjective: note.subjective ?? '',
+        objective: note.objective ?? '',
+        assessment: note.assessment ?? '',
+        plan: note.plan ?? '',
+        isAmended: note.isAmended,
+        amendedFrom: note.amendedFrom ?? undefined,
+        createdAt: note.createdAt.toISOString(),
       })),
     };
   }
@@ -288,12 +306,19 @@ export class EncountersService {
   ): Promise<EncounterWriteResponseDto> {
     const encounter = await this.ensureOpenEncounter(encounterId);
 
+    // Description is authoritative from the ICD-10 catalog; the client value is
+    // only a fallback for codes not (yet) in the master table.
+    const master = await this.prisma.icd10Code.findUnique({
+      where: { code: dto.icd10Code },
+      select: { description: true },
+    });
+
     const diagnosis = await this.prisma.diagnosis.create({
       data: {
         encounterId,
         patientId: encounter.patientId,
         icd10Code: dto.icd10Code,
-        description: dto.description,
+        description: master?.description ?? dto.description,
         type: dto.type,
         status: dto.status ?? 'ACTIVE',
         diagnosedById,
@@ -632,7 +657,7 @@ export class EncountersService {
     return {
       id: encounter.id,
       encounterNo: encounter.encounterNo,
-      patientName: `${encounter.patient.firstName} ${encounter.patient.lastName}`,
+      patientName: decryptPatientName(this.crypto, encounter.patient),
       mrn: encounter.patient.mrn,
       doctorName: encounter.attendingDoctor.fullName,
       type: encounter.encounterType,

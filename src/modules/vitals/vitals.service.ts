@@ -6,6 +6,8 @@ import {
 import { randomInt } from 'crypto';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '@/prisma/prisma.service';
+import { CryptoService } from '@/common/security/crypto.service';
+import { decryptPatientName } from '@/common/security/phi.util';
 import { AppointmentResponseDto } from '@/modules/appointments/dto/appointment-response.dto';
 import { RecordVitalsDto } from './dto/record-vitals.dto';
 
@@ -20,7 +22,10 @@ type AppointmentWithRelations = Prisma.AppointmentGetPayload<{
 
 @Injectable()
 export class VitalsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly crypto: CryptoService,
+  ) {}
 
   async recordAppointmentVitals(
     appointmentId: string,
@@ -136,7 +141,7 @@ export class VitalsService {
     return {
       id: appointment.id,
       appointmentNo: appointment.appointmentNo,
-      patientName: `${appointment.patient.firstName} ${appointment.patient.lastName}`,
+      patientName: decryptPatientName(this.crypto, appointment.patient),
       mrn: appointment.patient.mrn,
       doctorName: doctorNames.get(appointment.doctorId) ?? appointment.doctorId,
       department: appointment.department.name,

@@ -2,6 +2,7 @@ import { NotFoundException } from '@nestjs/common';
 import { PatientsService } from './patients.service';
 import type { CreatePatientDto } from './dto/create-patient.dto';
 import type { PrismaService } from '@/prisma/prisma.service';
+import type { CryptoService } from '@/common/security/crypto.service';
 
 describe('PatientsService (unit)', () => {
   let service: PatientsService;
@@ -48,7 +49,16 @@ describe('PatientsService (unit)', () => {
       },
       $queryRaw: jest.fn(),
     };
-    service = new PatientsService(prisma as unknown as PrismaService);
+    const crypto = {
+      encrypt: (v: string) => v,
+      decrypt: (v: string) => v,
+      safeDecrypt: (v: string | null) => v,
+      blindIndex: (v: string) => `hash:${v}`,
+    };
+    service = new PatientsService(
+      prisma as unknown as PrismaService,
+      crypto as unknown as CryptoService,
+    );
   });
 
   const validDto = (): CreatePatientDto => ({
@@ -134,6 +144,7 @@ describe('PatientsService (unit)', () => {
   it('create() auto-generates a 7-digit MRN and stores registeredById', async () => {
     prisma.$queryRaw.mockResolvedValue([{ nextval: 43n }]);
     prisma.patient.create.mockResolvedValue(patientRow);
+    prisma.patient.findMany.mockResolvedValue([]); // no duplicate candidates
 
     const created = await service.create(validDto(), 'user-1');
 

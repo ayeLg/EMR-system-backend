@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
+import {
+  createCipheriv,
+  createDecipheriv,
+  createHmac,
+  randomBytes,
+} from 'node:crypto';
 
 /**
  * Application-level field encryption for PHI (first_name, last_name,
@@ -56,5 +61,29 @@ export class CryptoService {
       decipher.update(Buffer.from(dataB64, 'base64')),
       decipher.final(),
     ]).toString('utf8');
+  }
+
+  /**
+   * Tolerant decrypt: returns the value unchanged if it isn't in the
+   * `iv:tag:data` format (e.g. legacy plaintext rows during migration).
+   */
+  safeDecrypt(value: string | null | undefined): string | null {
+    if (value == null) return null;
+    if (value.split(':').length !== 3) return value;
+    try {
+      return this.decrypt(value);
+    } catch {
+      return value;
+    }
+  }
+
+  /**
+   * Deterministic keyed hash (blind index) for equality search over encrypted
+   * fields — same input always yields the same hash, so NRC dedup works without
+   * exposing the value. Not reversible.
+   */
+  blindIndex(value: string): string {
+    const normalized = value.trim().toLowerCase().replace(/\s+/g, '');
+    return createHmac('sha256', this.key).update(normalized).digest('hex');
   }
 }

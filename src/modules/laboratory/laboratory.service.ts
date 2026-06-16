@@ -7,6 +7,10 @@ import { LabOrderStatus } from '@prisma/client';
 import { randomInt } from 'node:crypto';
 import { PrismaService } from '@/prisma/prisma.service';
 import { AuditService } from '@/modules/audit/audit.service';
+import { NotificationService } from '@/modules/notifications/notification.service';
+import { JobsService } from '@/jobs/jobs.service';
+import { CryptoService } from '@/common/security/crypto.service';
+import { decryptPatientName } from '@/common/security/phi.util';
 import { CollectSpecimenDto } from './dto/collect-specimen.dto';
 import { SaveLabResultsDto } from './dto/save-results.dto';
 
@@ -26,6 +30,9 @@ export class LaboratoryService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly notifications: NotificationService,
+    private readonly jobs: JobsService,
+    private readonly crypto: CryptoService,
   ) {}
 
   async findAll() {
@@ -40,7 +47,7 @@ export class LaboratoryService {
     return orders.map((o) => ({
       id: o.id,
       orderNo: o.orderNo,
-      patientName: `${o.patient.firstName} ${o.patient.lastName}`,
+      patientName: decryptPatientName(this.crypto, o.patient),
       mrn: o.patient.mrn,
       orderedBy: o.orderedBy.fullName,
       orderedAt: o.orderedAt.toISOString(),
@@ -114,7 +121,7 @@ export class LaboratoryService {
     return {
       id: order.id,
       orderNo: order.orderNo,
-      patientName: `${order.patient.firstName} ${order.patient.lastName}`,
+      patientName: decryptPatientName(this.crypto, order.patient),
       mrn: order.patient.mrn,
       orderedBy: order.orderedBy.fullName,
       orderedAt: order.orderedAt.toISOString(),
@@ -279,7 +286,82 @@ export class LaboratoryService {
       newData: updated,
     });
 
+    await this.handleCriticalResults(id, order.orderNo, order.orderedById);
+
     return updated;
+  }
+
+  /**
+   * Critical-value protocol (CLAUDE.md Feature 4): notify the ordering doctor
+   * immediately (in-app + SMS fallback) and arm a 30-min escalation timer for
+   * each newly-resulted critical value.
+   */
+  private async handleCriticalResults(
+    orderId: string,
+    orderNo: string,
+    orderedById: string,
+  ): Promise<void> {
+    const criticalResults = await this.prisma.labResult.findMany({
+      where: {
+        labOrderItem: { labOrderId: orderId },
+        isCritical: true,
+        criticalNotifiedAt: null,
+      },
+      select: { id: true },
+    });
+    if (criticalResults.length === 0) return;
+
+    const doctor = await this.prisma.user.findUnique({
+      where: { id: orderedById },
+      select: { phone: true },
+    });
+
+    for (const result of criticalResults) {
+      await this.prisma.labResult.update({
+        where: { id: result.id },
+        data: { criticalNotifiedAt: new Date() },
+      });
+      await this.notifications.dispatch({
+        userId: orderedById,
+        type: 'CRITICAL_VALUE',
+        title: 'Critical lab value',
+        body: `Critical result on order ${orderNo}. Acknowledge within 30 minutes.`,
+        refType: 'lab_result',
+        refId: result.id,
+        sms: {
+          phone: doctor?.phone,
+          text: `CRITICAL lab result on order ${orderNo}. Please review immediately.`,
+        },
+      });
+      await this.jobs.scheduleLabCriticalEscalation(result.id);
+    }
+  }
+
+  /** Ordering doctor acknowledges a critical value (stops escalation). */
+  async acknowledgeCritical(resultId: string, userId: string) {
+    const result = await this.prisma.labResult.findUnique({
+      where: { id: resultId },
+    });
+    if (!result) {
+      throw new NotFoundException(`Lab result ${resultId} not found`);
+    }
+    if (!result.isCritical) {
+      throw new BadRequestException('Result is not flagged critical');
+    }
+
+    const updated = await this.prisma.labResult.update({
+      where: { id: resultId },
+      data: { criticalAckAt: new Date(), criticalAckById: userId },
+    });
+
+    await this.audit.create({
+      userId,
+      action: 'ACK_CRITICAL_VALUE',
+      module: 'LABORATORY',
+      resourceId: resultId,
+    });
+
+    return { id: updated.id, acknowledgedAt: updated.criticalAckAt };
   }
 
   async verifyResults(id: string, userId: string) {

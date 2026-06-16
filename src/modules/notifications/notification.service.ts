@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
+import { SmsService } from '@/common/messaging/sms.service';
 import { NotificationType } from '@prisma/client';
 
 export interface CreateNotificationInput {
@@ -11,9 +12,29 @@ export interface CreateNotificationInput {
   refId?: string;
 }
 
+export interface DispatchInput extends CreateNotificationInput {
+  /** When provided, also sends an SMS fallback to this number. */
+  sms?: { phone?: string | null; text?: string };
+}
+
 @Injectable()
 export class NotificationService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly sms: SmsService,
+  ) {}
+
+  /**
+   * Create an in-app notification and (optionally) send an SMS fallback in one
+   * call — the channel matrix in CLAUDE.md (in-app + SMS) lives here.
+   */
+  async dispatch(dto: DispatchInput) {
+    const notification = await this.createNotification(dto);
+    if (dto.sms) {
+      await this.sms.send(dto.sms.phone, dto.sms.text ?? dto.body);
+    }
+    return notification;
+  }
 
   async getNotifications(userId: string) {
     return this.prisma.notification.findMany({

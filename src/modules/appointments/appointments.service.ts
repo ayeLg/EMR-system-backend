@@ -6,6 +6,9 @@ import {
 import { randomBytes, randomInt } from 'crypto';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '@/prisma/prisma.service';
+import { JobsService } from '@/jobs/jobs.service';
+import { CryptoService } from '@/common/security/crypto.service';
+import { decryptPatientName } from '@/common/security/phi.util';
 import { AppointmentResponseDto } from './dto/appointment-response.dto';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
@@ -21,7 +24,11 @@ type AppointmentWithRelations = Prisma.AppointmentGetPayload<{
 
 @Injectable()
 export class AppointmentsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly jobs: JobsService,
+    private readonly crypto: CryptoService,
+  ) {}
 
   async findAll(): Promise<AppointmentResponseDto[]> {
     const appointments = await this.prisma.appointment.findMany({
@@ -168,6 +175,13 @@ export class AppointmentsService {
       }
     }
 
+    // 5. Same-day limit: max 3 active appointments per patient per day.
+    if (existingPatientAppts.length >= 3) {
+      throw new BadRequestException(
+        'Same-day limit reached: a patient may have at most 3 appointments per day.',
+      );
+    }
+
     const appointment = await this.prisma.appointment.create({
       data: {
         ...dto,
@@ -177,6 +191,10 @@ export class AppointmentsService {
       },
       include: appointmentInclude,
     });
+    // Reminder + auto no-show jobs (booking confirmation handled separately).
+    await this.jobs.scheduleAppointmentReminders(appointment.id, apptDate);
+    await this.jobs.scheduleNoShow(appointment.id, apptDate);
+
     const doctorNames = await this.getDoctorNameMap([appointment.doctorId]);
     return this.toResponse(appointment, doctorNames);
   }
@@ -251,6 +269,16 @@ export class AppointmentsService {
 
       return updated;
     });
+
+    // Keep scheduled jobs in sync with status / reschedule changes.
+    if (dto.status === 'CANCELLED' || dto.status === 'NO_SHOW') {
+      await this.jobs.cancelAppointmentJobs(id);
+    } else if (dto.scheduledAt) {
+      await this.jobs.cancelAppointmentJobs(id);
+      await this.jobs.scheduleAppointmentReminders(id, appointment.scheduledAt);
+      await this.jobs.scheduleNoShow(id, appointment.scheduledAt);
+    }
+
     const doctorNames = await this.getDoctorNameMap([appointment.doctorId]);
     return this.toResponse(appointment, doctorNames);
   }
@@ -324,7 +352,7 @@ export class AppointmentsService {
     return {
       id: appointment.id,
       appointmentNo: appointment.appointmentNo,
-      patientName: `${appointment.patient.firstName} ${appointment.patient.lastName}`,
+      patientName: decryptPatientName(this.crypto, appointment.patient),
       mrn: appointment.patient.mrn,
       doctorName: doctorNames.get(appointment.doctorId) ?? appointment.doctorId,
       department: appointment.department.name,

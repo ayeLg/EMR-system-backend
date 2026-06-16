@@ -117,6 +117,32 @@ export class EncounterMedicalOrderDto {
   orderedAt!: string;
 }
 
+export class EncounterSoapNoteDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  subjective!: string;
+
+  @ApiProperty()
+  objective!: string;
+
+  @ApiProperty()
+  assessment!: string;
+
+  @ApiProperty()
+  plan!: string;
+
+  @ApiProperty()
+  isAmended!: boolean;
+
+  @ApiPropertyOptional()
+  amendedFrom?: string;
+
+  @ApiProperty()
+  createdAt!: string;
+}
+
 export class EncounterDetailResponseDto extends EncounterResponseDto {
   @ApiProperty({ type: Object, isArray: true })
   allergies!: { allergenName: string; severity: string }[];
@@ -141,6 +167,9 @@ export class EncounterDetailResponseDto extends EncounterResponseDto {
 
   @ApiProperty({ type: EncounterMedicalOrderDto, isArray: true })
   medicalOrders!: EncounterMedicalOrderDto[];
+
+  @ApiProperty({ type: EncounterSoapNoteDto, isArray: true })
+  soapNotes!: EncounterSoapNoteDto[];
 }
 
 export class EncounterWriteResponseDto {

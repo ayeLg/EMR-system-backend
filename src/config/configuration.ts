@@ -17,6 +17,15 @@ export default () => ({
   totp: {
     issuer: process.env.TOTP_ISSUER ?? 'EMR-System',
   },
+  redis: {
+    host: process.env.REDIS_HOST ?? 'localhost',
+    port: Number.parseInt(process.env.REDIS_PORT ?? '6379', 10),
+  },
+  sms: {
+    // 'log' = dev stub (logs only). Swap to a real provider via env later.
+    provider: process.env.SMS_PROVIDER ?? 'log',
+    from: process.env.SMS_FROM ?? 'YangonEMR',
+  },
   throttle: {
     ttl: Number.parseInt(process.env.THROTTLE_TTL ?? '60000', 10),
     limit: Number.parseInt(process.env.THROTTLE_LIMIT ?? '100', 10),

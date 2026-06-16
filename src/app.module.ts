@@ -6,6 +6,8 @@ import configuration from '@/config/configuration';
 import { validate } from '@/config/env.validation';
 import { PrismaModule } from '@/prisma/prisma.module';
 import { SecurityModule } from '@/common/security/security.module';
+import { MessagingModule } from '@/common/messaging/messaging.module';
+import { JobsModule } from '@/jobs/jobs.module';
 import { CaslModule } from '@/authorization/casl/casl.module';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { PoliciesGuard } from '@/common/guards/policies.guard';
@@ -50,6 +52,8 @@ import { ReportsModule } from '@/modules/reports/reports.module';
     }),
     PrismaModule,
     SecurityModule,
+    MessagingModule,
+    JobsModule,
     CaslModule,
     UsersModule,
     AuthModule,

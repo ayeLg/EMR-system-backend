@@ -313,11 +313,12 @@ model AuditLog {
 model Patient {
   id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   mrn            String    @unique @db.VarChar(20)
-  firstName      String    @db.VarChar(100)    // encrypted at app level
-  lastName       String    @db.VarChar(100)    // encrypted at app level
+  firstName      String    @db.VarChar(255)    // encrypted at app level
+  lastName       String    @db.VarChar(255)    // encrypted at app level
   dateOfBirth    DateTime  @db.Date
   gender         Gender
-  nrcNumber      String?   @unique @db.VarChar(30) // encrypted at app level
+  nrcNumber      String?   @db.VarChar(255)    // encrypted at app level
+  nrcHash        String?   @db.VarChar(64)     // blind index (HMAC) for NRC dedup
   bloodType      BloodType @default(UNKNOWN)
   photoUrl       String?   @db.Text
   primaryPhone   String    @db.VarChar(20)
@@ -344,9 +345,9 @@ model Patient {
   labOrders    LabOrder[]
   invoices     Invoice[]
 
-  @@index([lastName, firstName])
   @@index([primaryPhone])
   @@index([dateOfBirth])
+  @@index([nrcHash])
   @@map("patients")
 }
 
@@ -752,10 +753,15 @@ model LabResult {
   resultedAt      DateTime @default(now())
   verifiedAt      DateTime?
   notes           String?  @db.Text
+  // Critical-value protocol (CLAUDE.md Feature 4)
+  criticalNotifiedAt DateTime?
+  criticalAckAt   DateTime?
+  criticalAckById String?  @db.Uuid
 
   labOrderItem LabOrderItem @relation(fields: [labOrderItemId], references: [id])
 
   @@index([patientId])
+  @@index([isCritical, criticalAckAt])
   @@map("lab_results")
 }
 
@@ -885,4 +891,18 @@ model Notification {
 
   @@index([userId, isRead])
   @@map("notifications")
+}
+
+// ============================================================
+// REFERENCE — ICD-10 diagnosis catalog (master)
+// ============================================================
+
+model Icd10Code {
+  code        String  @id @db.VarChar(10)
+  description String  @db.VarChar(300)
+  category    String? @db.VarChar(100)
+  isActive    Boolean @default(true)
+
+  @@index([description])
+  @@map("icd10_codes")
 }

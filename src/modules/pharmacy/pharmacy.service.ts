@@ -6,6 +6,8 @@ import {
 import { PrescriptionStatus, Prisma } from '@prisma/client';
 import { AuditService } from '@/modules/audit/audit.service';
 import { PrismaService } from '@/prisma/prisma.service';
+import { CryptoService } from '@/common/security/crypto.service';
+import { decryptPatientName } from '@/common/security/phi.util';
 import { DispensePrescriptionDto } from './dto/dispense-prescription.dto';
 import { InventoryResponseDto } from './dto/inventory-response.dto';
 import {
@@ -28,6 +30,7 @@ export class PharmacyService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
+    private readonly crypto: CryptoService,
   ) {}
 
   async findAllPrescriptions(): Promise<PrescriptionResponseDto[]> {
@@ -68,7 +71,7 @@ export class PharmacyService {
       results.push({
         id: rx.id,
         rxNumber: rx.rxNumber,
-        patientName: `${rx.patient.firstName} ${rx.patient.lastName}`,
+        patientName: decryptPatientName(this.crypto, rx.patient),
         mrn: rx.patient.mrn,
         prescribedBy: rx.prescribedBy.fullName,
         prescribedAt: rx.prescribedAt.toISOString(),
@@ -407,7 +410,7 @@ export class PharmacyService {
       return {
         id: updatedRx.id,
         rxNumber: updatedRx.rxNumber,
-        patientName: `${updatedRx.patient.firstName} ${updatedRx.patient.lastName}`,
+        patientName: decryptPatientName(this.crypto, updatedRx.patient),
         mrn: updatedRx.patient.mrn,
         prescribedBy: updatedRx.prescribedBy.fullName,
         prescribedAt: updatedRx.prescribedAt.toISOString(),

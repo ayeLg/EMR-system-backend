@@ -5,6 +5,8 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import { AuditService } from '@/modules/audit/audit.service';
+import { CryptoService } from '@/common/security/crypto.service';
+import { decryptPatientName } from '@/common/security/phi.util';
 import { OrderStatus, Prisma } from '@prisma/client';
 import { SubmitRadiologyResultsDto } from './dto/submit-results.dto';
 import {
@@ -17,6 +19,7 @@ export class RadiologyService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly crypto: CryptoService,
   ) {}
 
   async findAll(): Promise<RadiologyOrderResponseDto[]> {
@@ -38,7 +41,7 @@ export class RadiologyService {
       return {
         id: o.id,
         encounterId: o.encounterId,
-        patientName: `${o.encounter.patient.firstName} ${o.encounter.patient.lastName}`,
+        patientName: decryptPatientName(this.crypto, o.encounter.patient),
         mrn: o.encounter.patient.mrn,
         orderedBy: o.encounter.attendingDoctor.fullName,
         orderedAt: o.orderedAt.toISOString(),
@@ -73,7 +76,7 @@ export class RadiologyService {
     return {
       id: order.id,
       encounterId: order.encounterId,
-      patientName: `${order.encounter.patient.firstName} ${order.encounter.patient.lastName}`,
+      patientName: decryptPatientName(this.crypto, order.encounter.patient),
       mrn: order.encounter.patient.mrn,
       orderedBy: order.encounter.attendingDoctor.fullName,
       orderedAt: order.orderedAt.toISOString(),

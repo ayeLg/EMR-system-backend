@@ -94,4 +94,17 @@ export class LaboratoryController {
   cancelOrder(@Param('id') id: string, @CurrentUser() user: User) {
     return this.service.cancelOrder(id, user.id);
   }
+
+  @CheckPolicies(updateLaboratoryPolicy())
+  @Post('results/:resultId/acknowledge')
+  @ApiOperation({
+    summary: 'Acknowledge a critical lab value (stops escalation)',
+  })
+  @ApiParam({ name: 'resultId', format: 'uuid' })
+  acknowledgeCritical(
+    @Param('resultId') resultId: string,
+    @CurrentUser() user: User,
+  ) {
+    return this.service.acknowledgeCritical(resultId, user.id);
+  }
 }

@@ -20,6 +20,8 @@ export class RecordPaymentDto extends createZodDto(RecordPaymentSchema) {}
 export const SubmitClaimSchema = z.object({
   insuranceProvider: z.string().min(1),
   policyNumber: z.string().min(1),
+  // Optional override; otherwise resolved from the patient's policy.
+  coveragePercent: z.number().min(0).max(100).optional(),
 });
 
 export class SubmitClaimDto extends createZodDto(SubmitClaimSchema) {}
